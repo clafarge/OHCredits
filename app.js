@@ -11,8 +11,10 @@
   const CPL = { "169": 40, "916": 18 };
 
   const LINE_PX = 24;
-  const ROLE_BLOCK_PX = 26;
-  const BLOCK_GAP_PX = 14;
+  /** Role line + tight gap to names (matches reduced .slide-role margin) */
+  const ROLE_BLOCK_PX = 22;
+  /** Space after a credit block before the next (matches larger .slide-credit-gap / margins) */
+  const BLOCK_GAP_PX = 21;
 
   const els = {
     toggleJson: document.getElementById("btn-toggle-json"),
@@ -59,6 +61,67 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  /** @param {string} lower */
+  function pluralizeWordLower(lower) {
+    if (!lower) return lower;
+    if (/[bcdfghjklmnpqrstvwxyz]y$/.test(lower)) return lower.slice(0, -1) + "ies";
+    if (/(s|x|z|ch|sh)$/.test(lower)) return lower + "es";
+    return lower + "s";
+  }
+
+  /** @param {string} originalToken */
+  function pluralizeToken(originalToken) {
+    const t = originalToken.trim();
+    if (!t) return t;
+    if (t.includes("-")) {
+      const parts = t.split("-");
+      const last = parts[parts.length - 1];
+      const pl = pluralizeWordLower(last.toLowerCase());
+      parts[parts.length - 1] = matchCaseWord(last, pl);
+      return parts.join("-");
+    }
+    const pl = pluralizeWordLower(t.toLowerCase());
+    return matchCaseWord(t, pl);
+  }
+
+  /** @param {string} original @param {string} pluralLower */
+  function matchCaseWord(original, pluralLower) {
+    if (!original) return pluralLower;
+    if (original === original.toUpperCase()) return pluralLower.toUpperCase();
+    if (
+      original.length > 0 &&
+      original[0] === original[0].toUpperCase() &&
+      original.slice(1) === original.slice(1).toLowerCase()
+    ) {
+      return pluralLower.charAt(0).toUpperCase() + pluralLower.slice(1);
+    }
+    return pluralLower;
+  }
+
+  /**
+   * When multiple people share a role, pluralize the appropriate word (e.g. Technical Director → Technical Directors).
+   * @param {string} role
+   */
+  function pluralizeRolePhrase(role) {
+    const t = role.trim();
+    if (!t) return role;
+    const parts = t.split(/\s+/);
+    if (parts.length === 0) return role;
+    const pluralizeFirst = /\s+in\s+/i.test(t) || /\s+of\s+/i.test(t);
+    const idx = pluralizeFirst ? 0 : parts.length - 1;
+    parts[idx] = pluralizeToken(parts[idx]);
+    return parts.join(" ");
+  }
+
+  /**
+   * @param {{ role: string, people: string[] }} item
+   */
+  function roleForDisplay(item) {
+    const base = item.role || "—";
+    if (item.people.length <= 1) return base;
+    return pluralizeRolePhrase(base);
   }
 
   /**
@@ -108,7 +171,7 @@
   }
 
   function creditInnerHtml(item) {
-    const roleHtml = escapeHtml(item.role || "—");
+    const roleHtml = escapeHtml(roleForDisplay(item));
     const list =
       item.people.length === 0
         ? `<p class="slide-empty">No names listed</p>`
