@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Optional: instead of player-config.json, set Supabase URL + anon key for ?event=… -->
+    <!-- <meta name="ohcredits-supabase-url" content="https://YOUR_REF.supabase.co" /> -->
+    <!-- <meta name="ohcredits-supabase-anon-key" content="YOUR_ANON_KEY" /> -->
+    <title>OHCredits player</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="player-body">
+    <div id="player-shell" class="player-shell player-shell--169">
+      <div id="player-frame" class="frame frame-16-9 playout-frame">
+        <div class="frame-inner">
+          <div class="slide-layer">
+            <div id="slide-content" class="slide-content" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="oh-engine.js"></script>
+    <script src="player.js"></script>
+  </body>
+</html>

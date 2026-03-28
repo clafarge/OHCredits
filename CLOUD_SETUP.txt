@@ -1,0 +1,42 @@
+OHCredits — cloud “event” workflow (free Supabase tier)
+=======================================================
+
+Why: Static GitHub Pages cannot run a private write API. Supabase gives you a real
+database + HTTPS API. The player only needs the public “anon” key and reads rows
+by event code. Publishing uses a secret that never ships in the player page.
+
+1) Create a project at https://supabase.com (free tier is enough for many shows).
+
+2) SQL Editor → run the migration in:
+   supabase/migrations/20250328000000_credit_events.sql
+
+3) Install Supabase CLI (optional) and deploy the Edge Function, or paste
+   supabase/functions/publish-credits/index.ts into the Dashboard → Edge Functions
+   → create “publish-credits”.
+
+   Set project secret: PUBLISH_SECRET = a long random string (password manager).
+
+   Deployed URL will look like:
+   https://YOUR_REF.supabase.co/functions/v1/publish-credits
+
+4) On your GitHub Pages site (same folder as player.html), add player-config.json
+   by copying player-config.example.json and filling in:
+   - supabaseUrl: Project Settings → API → Project URL
+   - supabaseAnonKey: Project Settings → API → anon public key
+
+   Commit player-config.json. The anon key is safe here if RLS only allows SELECT
+   on credit_events (see migration). Never commit the service_role key.
+
+5) In the OHCredits editor → “Cloud events”:
+   - Event code: e.g. officehours
+   - Publish function URL: your …/functions/v1/publish-credits
+   - Publish secret: same as PUBLISH_SECRET
+   Click “Publish design”, then copy “16:9 / 9:16 URL (?event)” for third parties.
+
+6) Third parties open:
+   https://YOUR_SITE/.../player.html?view=16x9&event=officehours
+   (or 9:16). Their browser loads player-config.json from your site, then fetches
+   the design from Supabase. No giant hash in the URL.
+
+Alternatives: Firebase Firestore, Cloudflare D1 + Worker, PlanetScale + serverless
+API — same pattern: public read by event id, writes behind a secret or auth.

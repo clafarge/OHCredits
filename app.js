@@ -1,8 +1,18 @@
 (function () {
   "use strict";
 
-  const DISPLAY_MS = 5000;
-  const FADE_MS = 500;
+  const OH = window.OHCreditsEngine;
+  if (!OH) throw new Error("Load oh-engine.js before app.js");
+
+  const EPISODE_ID = OH.EPISODE_ID;
+  const PEOPLE_MAX_PER_GROUP = OH.PEOPLE_MAX_PER_GROUP;
+
+  /** Commit this file next to `player.html` for short player URLs (`?url=…`). */
+  const EXPORT_DESIGN_FILENAME = "ohcredits-design.json";
+
+  const LS_REMOTE_EVENT = "ohcredits_remote_event";
+  const LS_REMOTE_FN = "ohcredits_remote_function_url";
+  const LS_REMOTE_SECRET = "ohcredits_remote_publish_secret";
 
   /**
    * Usable vertical space (px) per page at playout scale — tuned so ~3 simple credits
@@ -18,11 +28,6 @@
   const LINE_PX = 22;
   const ROLE_BLOCK_PX = 18;
   const BLOCK_GAP_PX = 14;
-
-  const EPISODE_ID = "__episode__";
-
-  /** Roles with more than this many people become separate draggable blocks (same title each). */
-  const PEOPLE_MAX_PER_GROUP = 12;
 
   const els = {
     toggleJson: document.getElementById("btn-toggle-json"),
@@ -40,6 +45,20 @@
     btnPlay916: document.getElementById("btn-play-916"),
     btnStop: document.getElementById("btn-stop"),
     btnAddPage: document.getElementById("btn-add-page"),
+    btnCopyPlayer169: document.getElementById("btn-copy-player-169"),
+    btnCopyPlayer916: document.getElementById("btn-copy-player-916"),
+    btnCopyPlayer169Json: document.getElementById("btn-copy-player-169-json"),
+    btnCopyPlayer916Json: document.getElementById("btn-copy-player-916-json"),
+    btnExportDesignJson: document.getElementById("btn-export-design-json"),
+    toggleRemote: document.getElementById("btn-toggle-remote"),
+    remotePanel: document.getElementById("remote-panel"),
+    remoteEvent: document.getElementById("remote-event"),
+    remoteFunctionUrl: document.getElementById("remote-function-url"),
+    remotePublishSecret: document.getElementById("remote-publish-secret"),
+    btnRemotePublish: document.getElementById("btn-remote-publish"),
+    btnCopyPlayer169Event: document.getElementById("btn-copy-player-169-event"),
+    btnCopyPlayer916Event: document.getElementById("btn-copy-player-916-event"),
+    remoteStatus: document.getElementById("remote-status"),
   };
 
   /** @type {string | null} */
@@ -52,7 +71,7 @@
   let playAbort = null;
 
   function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return OH.sleep(ms);
   }
 
   function setJsonStatus(message, kind) {
@@ -61,90 +80,35 @@
     if (kind) els.jsonStatus.classList.add(kind);
   }
 
-  function escapeHtml(s) {
-    return s
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+  function setRemoteStatus(message, kind) {
+    if (!els.remoteStatus) return;
+    els.remoteStatus.textContent = message || "";
+    els.remoteStatus.classList.remove("error", "ok");
+    if (kind) els.remoteStatus.classList.add(kind);
   }
 
-  function sortPeopleNames(names) {
-    return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base", numeric: true }));
+  function validateEventSlug(s) {
+    return typeof s === "string" && /^[\w-]{1,64}$/.test(s);
   }
 
-  /**
-   * Split a sorted name list into ≤12 per group, sizes as equal as possible.
-   * @param {string[]} sortedNames
-   * @returns {string[][]}
-   */
-  function chunkPeopleGroups(sortedNames) {
-    const n = sortedNames.length;
-    if (n === 0) return [];
-    if (n <= PEOPLE_MAX_PER_GROUP) return [sortedNames];
-    const numGroups = Math.ceil(n / PEOPLE_MAX_PER_GROUP);
-    const base = Math.floor(n / numGroups);
-    const remainder = n % numGroups;
-    /** @type {string[][]} */
-    const groups = [];
-    let idx = 0;
-    for (let g = 0; g < numGroups; g++) {
-      const size = base + (g < remainder ? 1 : 0);
-      groups.push(sortedNames.slice(idx, idx + size));
-      idx += size;
+  function loadRemoteFields() {
+    try {
+      if (els.remoteEvent) els.remoteEvent.value = localStorage.getItem(LS_REMOTE_EVENT) || "";
+      if (els.remoteFunctionUrl) els.remoteFunctionUrl.value = localStorage.getItem(LS_REMOTE_FN) || "";
+      if (els.remotePublishSecret) els.remotePublishSecret.value = localStorage.getItem(LS_REMOTE_SECRET) || "";
+    } catch {
+      /* private mode */
     }
-    return groups;
   }
 
-  function pluralizeWordLower(lower) {
-    if (!lower) return lower;
-    if (/[bcdfghjklmnpqrstvwxyz]y$/.test(lower)) return lower.slice(0, -1) + "ies";
-    if (/(s|x|z|ch|sh)$/.test(lower)) return lower + "es";
-    return lower + "s";
-  }
-
-  function pluralizeToken(originalToken) {
-    const t = originalToken.trim();
-    if (!t) return t;
-    if (t.includes("-")) {
-      const parts = t.split("-");
-      const last = parts[parts.length - 1];
-      const pl = pluralizeWordLower(last.toLowerCase());
-      parts[parts.length - 1] = matchCaseWord(last, pl);
-      return parts.join("-");
+  function saveRemoteFields() {
+    try {
+      if (els.remoteEvent) localStorage.setItem(LS_REMOTE_EVENT, els.remoteEvent.value.trim());
+      if (els.remoteFunctionUrl) localStorage.setItem(LS_REMOTE_FN, els.remoteFunctionUrl.value.trim());
+      if (els.remotePublishSecret) localStorage.setItem(LS_REMOTE_SECRET, els.remotePublishSecret.value);
+    } catch {
+      /* ignore */
     }
-    const pl = pluralizeWordLower(t.toLowerCase());
-    return matchCaseWord(t, pl);
-  }
-
-  function matchCaseWord(original, pluralLower) {
-    if (!original) return pluralLower;
-    if (original === original.toUpperCase()) return pluralLower.toUpperCase();
-    if (
-      original.length > 0 &&
-      original[0] === original[0].toUpperCase() &&
-      original.slice(1) === original.slice(1).toLowerCase()
-    ) {
-      return pluralLower.charAt(0).toUpperCase() + pluralLower.slice(1);
-    }
-    return pluralLower;
-  }
-
-  function pluralizeRolePhrase(role) {
-    const t = role.trim();
-    if (!t) return role;
-    const parts = t.split(/\s+/);
-    if (parts.length === 0) return role;
-    const pluralizeFirst = /\s+in\s+/i.test(t) || /\s+of\s+/i.test(t);
-    const idx = pluralizeFirst ? 0 : parts.length - 1;
-    parts[idx] = pluralizeToken(parts[idx]);
-    return parts.join(" ");
-  }
-
-  function roleForDisplay(item) {
-    const base = item.role || "—";
-    if (item.people.length <= 1) return base;
-    return pluralizeRolePhrase(base);
   }
 
   /**
@@ -216,17 +180,8 @@
     return p;
   }
 
-  function creditInnerHtml(item) {
-    const roleHtml = escapeHtml(roleForDisplay(item));
-    if (item.people.length === 0) {
-      return `<h2 class="slide-role">${roleHtml}</h2><p class="slide-empty">No names listed</p>`;
-    }
-    const list = `<ul class="slide-people">${item.people.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`;
-    return `<h2 class="slide-role">${roleHtml}</h2>${list}`;
-  }
-
   function creditBlockHtml(item, id) {
-    return `<div class="slide-credit-block credit-draggable" draggable="true" data-credit-id="${escapeHtml(id)}">${creditInnerHtml(item)}</div>`;
+    return `<div class="slide-credit-block credit-draggable" draggable="true" data-credit-id="${OH.escapeHtml(id)}">${OH.creditInnerHtml(item)}</div>`;
   }
 
   function episodeBlockHtml() {
@@ -271,8 +226,8 @@
     const date = episode && typeof episode.date === "string" ? episode.date.trim() : "";
     if (title || date) {
       let h = "";
-      if (title) h += `<h1 class="slide-episode-title">${escapeHtml(title)}</h1>`;
-      if (date) h += `<p class="slide-episode-date">${escapeHtml(date)}</p>`;
+      if (title) h += `<h1 class="slide-episode-title">${OH.escapeHtml(title)}</h1>`;
+      if (date) h += `<p class="slide-episode-date">${OH.escapeHtml(date)}</p>`;
       epHtml = h;
     }
 
@@ -286,13 +241,13 @@
       const role = typeof row.role === "string" ? row.role.trim() : "";
       let people = row.people;
       if (!Array.isArray(people)) people = [];
-      const names = sortPeopleNames(
+      const names = OH.sortPeopleNames(
         people
           .map((p) => (typeof p === "string" ? p.trim() : String(p)))
           .filter(Boolean)
       );
       const roleStr = role || "—";
-      const groups = chunkPeopleGroups(names);
+      const groups = OH.chunkPeopleGroups(names);
       if (groups.length === 0) {
         const id = `c-${i}-0`;
         itemsById.set(id, { role: roleStr, people: [] });
@@ -446,7 +401,7 @@
         ${removeBtn}
         <div class="page-box-header">
           <span class="page-box-title">Page ${pageIndex + 1}</span>
-          <span class="page-box-meta ${metaClass}" data-estimate="${escapeHtml(metaText)}" data-fit="${fitKey}" title="Estimated content height vs usable height for each format">${metaText}</span>
+          <span class="page-box-meta ${metaClass}" data-estimate="${OH.escapeHtml(metaText)}" data-fit="${fitKey}" title="Estimated content height vs usable height for each format">${metaText}</span>
         </div>
         <div class="page-box-viewport" data-drop-page="${pageIndex}">
           <div class="page-box-inner">${inner}</div>
@@ -499,37 +454,9 @@
     });
   }
 
-  function buildSlidesForAspect(aspect) {
-    /** @type {{ html: string }[]} */
-    const slides = [];
-    for (const ids of pages) {
-      if (ids.length === 0) {
-        slides.push({
-          html: `<div class="slide-page slide-page--blank" aria-label="Blank page"></div>`,
-        });
-        continue;
-      }
-      const blocks = ids
-        .map((id) => {
-          if (id === EPISODE_ID && episodeHtml) {
-            return `<div class="slide-credit-block slide-episode-block">${episodeHtml}</div>`;
-          }
-          const item = itemsById.get(id);
-          return item ? `<div class="slide-credit-block">${creditInnerHtml(item)}</div>` : "";
-        })
-        .filter(Boolean);
-      const gaps = blocks.length > 1 ? blocks.join('<div class="slide-credit-gap"></div>') : blocks[0];
-      slides.push({ html: `<div class="slide-page">${gaps}</div>` });
-    }
-    return slides;
-  }
-
-  function renderSlideInto(el, slides, index) {
-    if (index < 0 || index >= slides.length) {
-      el.innerHTML = `<p class="slide-empty">No slide.</p>`;
-      return;
-    }
-    el.innerHTML = slides[index].html;
+  /** Same slide HTML for both aspects; frames differ only in CSS. */
+  function buildSlidesForAspect(_aspect) {
+    return OH.buildSlides({ episodeHtml, pages, items: itemsById });
   }
 
   function setPlayingUi(playing) {
@@ -539,41 +466,173 @@
     els.btnStop.disabled = !playing;
     els.btnPreview.disabled = playing;
     els.toggleJson.disabled = playing;
+    if (els.btnCopyPlayer169) els.btnCopyPlayer169.disabled = playing;
+    if (els.btnCopyPlayer916) els.btnCopyPlayer916.disabled = playing;
+    if (els.btnCopyPlayer169Json) els.btnCopyPlayer169Json.disabled = playing;
+    if (els.btnCopyPlayer916Json) els.btnCopyPlayer916Json.disabled = playing;
+    if (els.btnExportDesignJson) els.btnExportDesignJson.disabled = playing;
+    if (els.toggleRemote) els.toggleRemote.disabled = playing;
+    if (els.btnRemotePublish) els.btnRemotePublish.disabled = playing;
+    if (els.btnCopyPlayer169Event) els.btnCopyPlayer169Event.disabled = playing;
+    if (els.btnCopyPlayer916Event) els.btnCopyPlayer916Event.disabled = playing;
   }
 
-  async function runPlayoutOnElement(el, slides, ac) {
-    if (slides.length === 0) return -1;
-    el.style.transition = `opacity ${FADE_MS}ms ease`;
-    let lastShownIndex = -1;
+  function designStateForShare() {
+    return {
+      v: 1,
+      episodeHtml,
+      pages,
+      items: Object.fromEntries(itemsById),
+    };
+  }
+
+  function playerUrlForView(viewParam) {
+    const u = new URL("player.html", window.location.href);
+    u.searchParams.set("view", viewParam);
+    u.hash = "d=" + OH.encodeDesignState(designStateForShare());
+    return u.href;
+  }
+
+  function playerUrlForJsonFile(viewParam) {
+    const u = new URL("player.html", window.location.href);
+    u.searchParams.set("view", viewParam);
+    u.searchParams.set("url", EXPORT_DESIGN_FILENAME);
+    return u.href;
+  }
+
+  async function copyPlayerLink(viewParam, label) {
+    if (itemsById.size === 0 && !episodeHtml) {
+      setJsonStatus("Apply JSON and arrange pages before copying a player link.", "error");
+      return;
+    }
     try {
-      for (let i = 0; i < slides.length; i++) {
-        if (ac.signal.aborted) break;
+      await navigator.clipboard.writeText(playerUrlForView(viewParam));
+      setJsonStatus(`Copied ${label} player link (full layout is in the URL; very long casts may hit browser limits).`, "ok");
+    } catch {
+      setJsonStatus("Could not copy — try another browser or paste from devtools.", "error");
+    }
+  }
 
-        el.innerHTML = slides[i].html;
-        lastShownIndex = i;
-        el.classList.add("is-hidden");
-        await sleep(0);
-        void el.offsetHeight;
-        el.classList.remove("is-hidden");
-        await sleep(FADE_MS);
+  async function copyPlayerFileLink(viewParam, label) {
+    if (itemsById.size === 0 && !episodeHtml) {
+      setJsonStatus("Apply JSON and arrange pages before copying a player link.", "error");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(playerUrlForJsonFile(viewParam));
+      setJsonStatus(
+        `Copied ${label} player URL using ${EXPORT_DESIGN_FILENAME} — save that file next to player.html and commit.`,
+        "ok"
+      );
+    } catch {
+      setJsonStatus("Could not copy — try another browser or paste from devtools.", "error");
+    }
+  }
 
-        if (ac.signal.aborted) break;
-        await sleep(DISPLAY_MS);
-        if (ac.signal.aborted) break;
-
-        const hasNext = i < slides.length - 1;
-        if (hasNext) {
-          el.classList.add("is-hidden");
-          await sleep(FADE_MS);
-        }
-      }
-    } finally {
-      el.classList.remove("is-hidden");
-      if (slides.length && lastShownIndex >= 0) {
-        renderSlideInto(el, slides, lastShownIndex);
+  async function exportDesignJson() {
+    if (itemsById.size === 0 && !episodeHtml) {
+      setJsonStatus("Nothing to export — apply JSON and arrange pages first.", "error");
+      return;
+    }
+    const json = JSON.stringify(designStateForShare(), null, 2);
+    if (window.showSaveFilePicker && window.FileSystemWritableFileStream) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: EXPORT_DESIGN_FILENAME,
+          types: [
+            {
+              description: "OHCredits design",
+              accept: { "application/json": [".json"] },
+            },
+          ],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(json);
+        await writable.close();
+        setJsonStatus(`Saved — commit this file with your site so player ?url= links work.`, "ok");
+        return;
+      } catch (e) {
+        if (e && e.name === "AbortError") return;
       }
     }
-    return lastShownIndex;
+    const blob = new Blob([json], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = EXPORT_DESIGN_FILENAME;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    setJsonStatus(
+      `Downloaded ${EXPORT_DESIGN_FILENAME} — move it into your GitHub project next to player.html and commit.`,
+      "ok"
+    );
+  }
+
+  async function publishRemote() {
+    if (itemsById.size === 0 && !episodeHtml) {
+      setRemoteStatus("Apply JSON and arrange pages before publishing.", "error");
+      return;
+    }
+    const code = els.remoteEvent ? els.remoteEvent.value.trim() : "";
+    const fn = els.remoteFunctionUrl ? els.remoteFunctionUrl.value.trim() : "";
+    const sec = els.remotePublishSecret ? els.remotePublishSecret.value.trim() : "";
+    if (!validateEventSlug(code)) {
+      setRemoteStatus("Event code: 1–64 chars — letters, numbers, hyphens, underscores only.", "error");
+      return;
+    }
+    if (!fn || !sec) {
+      setRemoteStatus("Publish function URL and publish secret are required.", "error");
+      return;
+    }
+    saveRemoteFields();
+    let res;
+    try {
+      res = await fetch(fn, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sec}`,
+        },
+        body: JSON.stringify({
+          event_code: code,
+          design: designStateForShare(),
+        }),
+      });
+    } catch {
+      setRemoteStatus("Network error — check the function URL and browser console.", "error");
+      return;
+    }
+    let data = null;
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+    if (!res.ok) {
+      const err = data && data.error ? String(data.error) : res.statusText;
+      setRemoteStatus(`Publish failed: ${err}`, "error");
+      return;
+    }
+    setRemoteStatus(
+      `Published as “${code}”. Ensure player-config.json is on your site so ?event= links resolve.`,
+      "ok"
+    );
+  }
+
+  async function copyPlayerEventUrl(viewParam, label) {
+    const code = els.remoteEvent ? els.remoteEvent.value.trim() : "";
+    if (!validateEventSlug(code)) {
+      setRemoteStatus("Set a valid event code first (e.g. officehours).", "error");
+      return;
+    }
+    const u = new URL("player.html", window.location.href);
+    u.searchParams.set("view", viewParam);
+    u.searchParams.set("event", code);
+    try {
+      await navigator.clipboard.writeText(u.href);
+      setRemoteStatus(`Copied ${label} player URL (?event=${code}).`, "ok");
+    } catch {
+      setRemoteStatus("Could not copy to clipboard.", "error");
+    }
   }
 
   async function runPlayoutBoth() {
@@ -589,8 +648,8 @@
     setPlayingUi(true);
     try {
       await Promise.all([
-        runPlayoutOnElement(els.slide169, s169, ac),
-        runPlayoutOnElement(els.slide916, s916, ac),
+        OH.runPlayoutOnElement(els.slide169, s169, ac),
+        OH.runPlayoutOnElement(els.slide916, s916, ac),
       ]);
     } finally {
       setPlayingUi(false);
@@ -610,7 +669,7 @@
     playAbort = ac;
     setPlayingUi(true);
     try {
-      await runPlayoutOnElement(el, slides, ac);
+      await OH.runPlayoutOnElement(el, slides, ac);
     } finally {
       setPlayingUi(false);
       playAbort = null;
@@ -631,8 +690,8 @@
     const s916 = buildSlidesForAspect("916");
     els.slide169.classList.remove("is-hidden");
     els.slide916.classList.remove("is-hidden");
-    renderSlideInto(els.slide169, s169, 0);
-    renderSlideInto(els.slide916, s916, 0);
+    OH.renderSlideInto(els.slide169, s169, 0);
+    OH.renderSlideInto(els.slide916, s916, 0);
   }
 
   /** @param {DragEvent} e */
@@ -760,6 +819,32 @@
     els.toggleJson.setAttribute("aria-expanded", String(isHidden));
   });
 
+  if (els.toggleRemote && els.remotePanel) {
+    els.toggleRemote.addEventListener("click", () => {
+      const isHidden = els.remotePanel.hidden;
+      els.remotePanel.hidden = !isHidden;
+      els.remotePanel.classList.toggle("hidden", !isHidden);
+      els.toggleRemote.setAttribute("aria-expanded", String(isHidden));
+      if (isHidden) loadRemoteFields();
+    });
+  }
+
+  if (els.btnRemotePublish) {
+    els.btnRemotePublish.addEventListener("click", () => {
+      void publishRemote();
+    });
+  }
+  if (els.btnCopyPlayer169Event) {
+    els.btnCopyPlayer169Event.addEventListener("click", () => {
+      void copyPlayerEventUrl("16x9", "16:9");
+    });
+  }
+  if (els.btnCopyPlayer916Event) {
+    els.btnCopyPlayer916Event.addEventListener("click", () => {
+      void copyPlayerEventUrl("9x16", "9:16");
+    });
+  }
+
   els.applyJson.addEventListener("click", applyJsonFromInput);
 
   els.btnPreview.addEventListener("click", previewFirstSlide);
@@ -779,6 +864,33 @@
   els.btnStop.addEventListener("click", stopPlayout);
 
   els.btnAddPage.addEventListener("click", addEmptyPage);
+
+  if (els.btnCopyPlayer169) {
+    els.btnCopyPlayer169.addEventListener("click", () => {
+      void copyPlayerLink("16x9", "16:9");
+    });
+  }
+  if (els.btnCopyPlayer916) {
+    els.btnCopyPlayer916.addEventListener("click", () => {
+      void copyPlayerLink("9x16", "9:16");
+    });
+  }
+
+  if (els.btnExportDesignJson) {
+    els.btnExportDesignJson.addEventListener("click", () => {
+      void exportDesignJson();
+    });
+  }
+  if (els.btnCopyPlayer169Json) {
+    els.btnCopyPlayer169Json.addEventListener("click", () => {
+      void copyPlayerFileLink("16x9", "16:9");
+    });
+  }
+  if (els.btnCopyPlayer916Json) {
+    els.btnCopyPlayer916Json.addEventListener("click", () => {
+      void copyPlayerFileLink("9x16", "9:16");
+    });
+  }
 
   els.pageStrip.addEventListener("click", (e) => {
     const btn = e.target.closest(".page-box-remove");
@@ -810,6 +922,8 @@
   }
 
   applyViewFromQuery();
+
+  loadRemoteFields();
 
   renderPlayoutEmpty();
   renderPageStrip();
