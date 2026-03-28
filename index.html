@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OHCredits</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="toolbar">
+        <div class="toolbar-row">
+          <button type="button" id="btn-toggle-json" class="btn primary" aria-expanded="false">
+            Paste credits JSON
+          </button>
+          <label class="ratio-toggle">
+            <span class="sr-only">Aspect ratio</span>
+            <select id="aspect-ratio" aria-label="Preview aspect ratio">
+              <option value="16-9">16:9</option>
+              <option value="9-16">9:16</option>
+            </select>
+          </label>
+          <button type="button" id="btn-preview" class="btn">Preview first slide</button>
+          <button type="button" id="btn-play" class="btn">Play all</button>
+          <button type="button" id="btn-stop" class="btn" disabled>Stop</button>
+        </div>
+        <div id="json-panel" class="json-panel hidden" hidden>
+          <label for="json-input" class="json-label"
+            >Paste JSON (episode + credits with role / people)</label
+          >
+          <textarea id="json-input" rows="12" spellcheck="false" placeholder='{"episode":{...},"credits":[...]}'></textarea>
+          <div class="json-actions">
+            <button type="button" id="btn-apply-json" class="btn primary">Apply JSON</button>
+            <span id="json-status" class="json-status" role="status"></span>
+          </div>
+        </div>
+      </header>
+
+      <main class="stage-wrap">
+        <div id="frame" class="frame frame-16-9" data-ratio="16-9">
+          <div class="frame-inner">
+            <div id="slide-layer" class="slide-layer">
+              <div id="slide-content" class="slide-content" aria-live="polite"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
