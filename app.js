@@ -27,6 +27,7 @@
     strip169: document.getElementById("page-strip-169"),
     strip916: document.getElementById("page-strip-916"),
     btnPreview: document.getElementById("btn-preview"),
+    btnPlayBoth: document.getElementById("btn-play-both"),
     btnPlay169: document.getElementById("btn-play-169"),
     btnPlay916: document.getElementById("btn-play-916"),
     btnStop: document.getElementById("btn-stop"),
@@ -42,8 +43,6 @@
   let pages916 = [[]];
 
   let playAbort = null;
-  /** @type {HTMLElement | null} */
-  let playoutEl = null;
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -415,26 +414,24 @@
     el.innerHTML = slides[index].html;
   }
 
-  async function runPlayout(aspect) {
-    const slides = buildSlidesForAspect(aspect);
-    if (slides.length === 0) {
-      setJsonStatus("Load JSON before play.", "error");
-      return;
-    }
+  function setPlayingUi(playing) {
+    els.btnPlayBoth.disabled = playing;
+    els.btnPlay169.disabled = playing;
+    els.btnPlay916.disabled = playing;
+    els.btnStop.disabled = !playing;
+    els.btnPreview.disabled = playing;
+    els.toggleJson.disabled = playing;
+  }
 
-    const el = aspect === "169" ? els.slide169 : els.slide916;
-    const ac = new AbortController();
-    playAbort = ac;
-    playoutEl = el;
-    els.btnPlay169.disabled = true;
-    els.btnPlay916.disabled = true;
-    els.btnStop.disabled = false;
-    els.btnPreview.disabled = true;
-    els.toggleJson.disabled = true;
-
+  /**
+   * @param {HTMLElement} el
+   * @param {{ html: string }[]} slides
+   * @param {AbortController} ac
+   */
+  async function runPlayoutOnElement(el, slides, ac) {
+    if (slides.length === 0) return -1;
     el.style.transition = `opacity ${FADE_MS}ms ease`;
     let lastShownIndex = -1;
-
     try {
       for (let i = 0; i < slides.length; i++) {
         if (ac.signal.aborted) break;
@@ -459,16 +456,51 @@
       }
     } finally {
       el.classList.remove("is-hidden");
-      els.btnPlay169.disabled = false;
-      els.btnPlay916.disabled = false;
-      els.btnStop.disabled = true;
-      els.btnPreview.disabled = false;
-      els.toggleJson.disabled = false;
-      playAbort = null;
-      playoutEl = null;
       if (slides.length && lastShownIndex >= 0) {
         renderSlideInto(el, slides, lastShownIndex);
       }
+    }
+    return lastShownIndex;
+  }
+
+  async function runPlayoutBoth() {
+    const s169 = buildSlidesForAspect("169");
+    const s916 = buildSlidesForAspect("916");
+    if (s169.length === 0 && s916.length === 0) {
+      setJsonStatus("Load JSON before play.", "error");
+      return;
+    }
+
+    const ac = new AbortController();
+    playAbort = ac;
+    setPlayingUi(true);
+    try {
+      await Promise.all([
+        runPlayoutOnElement(els.slide169, s169, ac),
+        runPlayoutOnElement(els.slide916, s916, ac),
+      ]);
+    } finally {
+      setPlayingUi(false);
+      playAbort = null;
+    }
+  }
+
+  async function runPlayout(aspect) {
+    const slides = buildSlidesForAspect(aspect);
+    if (slides.length === 0) {
+      setJsonStatus("Load JSON before play.", "error");
+      return;
+    }
+
+    const el = aspect === "169" ? els.slide169 : els.slide916;
+    const ac = new AbortController();
+    playAbort = ac;
+    setPlayingUi(true);
+    try {
+      await runPlayoutOnElement(el, slides, ac);
+    } finally {
+      setPlayingUi(false);
+      playAbort = null;
     }
   }
 
@@ -604,6 +636,10 @@
   els.applyJson.addEventListener("click", applyJsonFromInput);
 
   els.btnPreview.addEventListener("click", previewFirstSlide);
+
+  els.btnPlayBoth.addEventListener("click", () => {
+    void runPlayoutBoth();
+  });
 
   els.btnPlay169.addEventListener("click", () => {
     void runPlayout("169");
