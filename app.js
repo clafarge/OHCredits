@@ -642,23 +642,80 @@
     );
   }
 
+  /**
+   * Edge Functions live at /functions/v1/<name>, not at the bare Project API URL.
+   * @returns {{ url: string, hint?: string }}
+   */
+  function resolvePublishFunctionUrl(raw) {
+    const trimmed = (raw || "").trim();
+    if (!trimmed) return { url: "" };
+    let u;
+    try {
+      u = new URL(trimmed);
+    } catch {
+      return { url: "" };
+    }
+    if (u.protocol !== "http:" && u.protocol !== "https:") return { url: "" };
+
+    const host = u.hostname.toLowerCase();
+    const pathNorm = u.pathname.replace(/\/+$/, "") || "";
+
+    if (host.endsWith(".supabase.co")) {
+      if (pathNorm.includes("/functions/v1/")) {
+        return { url: u.toString() };
+      }
+      if (pathNorm === "" || pathNorm === "/") {
+        u.pathname = "/functions/v1/publish-credits";
+        const fixed = u.toString();
+        return {
+          url: fixed,
+          hint: "Added /functions/v1/publish-credits — that is the Edge Function path, not the API root.",
+        };
+      }
+      if (pathNorm.includes("/rest/v1")) {
+        return {
+          url: "",
+          hint: "That URL is the REST API (PostgREST), not an Edge Function. Use …/functions/v1/publish-credits (see Edge Functions in Supabase).",
+        };
+      }
+      return {
+        url: "",
+        hint: "Supabase URL must include /functions/v1/publish-credits (deploy the publish-credits function first).",
+      };
+    }
+
+    return { url: u.toString() };
+  }
+
   async function publishRemote() {
     if (itemsById.size === 0 && !episodeHtml) {
       setRemoteStatus("Apply JSON and arrange pages before publishing.", "error");
       return;
     }
     const code = els.remoteEvent ? els.remoteEvent.value.trim() : "";
-    const fn = els.remoteFunctionUrl ? els.remoteFunctionUrl.value.trim() : "";
+    const fnRaw = els.remoteFunctionUrl ? els.remoteFunctionUrl.value.trim() : "";
     const sec = els.remotePublishSecret ? els.remotePublishSecret.value.trim() : "";
     if (!validateEventSlug(code)) {
       setRemoteStatus("Event code: 1–64 chars — letters, numbers, hyphens, underscores only.", "error");
       return;
     }
-    if (!fn || !sec) {
+    if (!fnRaw || !sec) {
       setRemoteStatus("Publish function URL and publish secret are required.", "error");
       return;
     }
+
+    const resolved = resolvePublishFunctionUrl(fnRaw);
+    if (!resolved.url) {
+      setRemoteStatus(resolved.hint || "Invalid publish function URL.", "error");
+      return;
+    }
+    const fn = resolved.url;
+    if (resolved.hint && els.remoteFunctionUrl) {
+      els.remoteFunctionUrl.value = fn;
+    }
+
     saveRemoteFields();
+
     let res;
     try {
       res = await fetch(fn, {
@@ -672,8 +729,12 @@
           design: designStateForShare(),
         }),
       });
-    } catch {
-      setRemoteStatus("Network error — check the function URL and browser console.", "error");
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      setRemoteStatus(
+        `Request failed (${detail}). Confirm the Edge Function is deployed and the URL ends with /functions/v1/publish-credits. Open the browser devtools Network tab for details.`,
+        "error"
+      );
       return;
     }
     let data = null;
@@ -688,8 +749,9 @@
       return;
     }
     rememberRemoteEventCode(code);
+    const autoFixNote = resolved.hint ? `${resolved.hint} ` : "";
     setRemoteStatus(
-      `Published as “${code}”. Ensure player-config.json is on your site so ?event= links resolve.`,
+      `${autoFixNote}Published as “${code}”. Ensure player-config.json is on your site so ?event= links resolve.`,
       "ok"
     );
   }

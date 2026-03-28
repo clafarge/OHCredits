@@ -36,7 +36,9 @@ Never commit connection strings or passwords to this repository.
 
    Set project secret: PUBLISH_SECRET = a long random string (password manager).
 
-   Deployed URL will look like:
+   In the OHCredits editor, “Publish function URL” must be the Edge Function
+   invoke URL — NOT the bare “Project URL” from Settings → API.
+   Correct form:
    https://YOUR_REF.supabase.co/functions/v1/publish-credits
 
 4) On your GitHub Pages site (same folder as player.html), add player-config.json

@@ -76,6 +76,11 @@
               spellcheck="false"
             />
             <label class="json-label" for="remote-function-url">Publish function URL</label>
+            <p class="remote-field-hint">
+              <strong>Not</strong> the “Project URL” / API URL from Settings → API alone. Use the
+              <strong>Edge Function invoke URL</strong>: <code>https://YOUR_REF.supabase.co/functions/v1/publish-credits</code>
+              (Dashboard → Edge Functions → <code>publish-credits</code> → copy URL). If you only paste the project root, we will try to add <code>/functions/v1/publish-credits</code> for you.
+            </p>
             <input
               id="remote-function-url"
               type="url"
