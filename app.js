@@ -13,6 +13,10 @@
   const LS_REMOTE_EVENT = "ohcredits_remote_event";
   const LS_REMOTE_FN = "ohcredits_remote_function_url";
   const LS_REMOTE_SECRET = "ohcredits_remote_publish_secret";
+  const LS_REMOTE_EVENT_LIST = "ohcredits_remote_event_list";
+
+  /** Shown in the Event quick-pick until you save your own list. */
+  const DEFAULT_EVENT_PRESETS = ["OfficeHours"];
 
   /**
    * Usable vertical space (px) per page at playout scale — tuned so ~3 simple credits
@@ -52,13 +56,18 @@
     btnExportDesignJson: document.getElementById("btn-export-design-json"),
     toggleRemote: document.getElementById("btn-toggle-remote"),
     remotePanel: document.getElementById("remote-panel"),
+    remoteEventPreset: document.getElementById("remote-event-preset"),
     remoteEvent: document.getElementById("remote-event"),
     remoteFunctionUrl: document.getElementById("remote-function-url"),
     remotePublishSecret: document.getElementById("remote-publish-secret"),
     btnRemotePublish: document.getElementById("btn-remote-publish"),
     btnCopyPlayer169Event: document.getElementById("btn-copy-player-169-event"),
     btnCopyPlayer916Event: document.getElementById("btn-copy-player-916-event"),
+    btnToolbarCopy169Event: document.getElementById("btn-toolbar-copy-169-event"),
+    btnToolbarCopy916Event: document.getElementById("btn-toolbar-copy-916-event"),
+    btnTogglePublishSecret: document.getElementById("btn-toggle-publish-secret"),
     remoteStatus: document.getElementById("remote-status"),
+    toolbarEventUrlStatus: document.getElementById("toolbar-event-url-status"),
   };
 
   /** @type {string | null} */
@@ -87,8 +96,70 @@
     if (kind) els.remoteStatus.classList.add(kind);
   }
 
+  function setToolbarEventUrlStatus(message, kind) {
+    if (!els.toolbarEventUrlStatus) return;
+    els.toolbarEventUrlStatus.textContent = message || "";
+    els.toolbarEventUrlStatus.classList.remove("error", "ok");
+    if (kind) els.toolbarEventUrlStatus.classList.add(kind);
+  }
+
   function validateEventSlug(s) {
     return typeof s === "string" && /^[\w-]{1,64}$/.test(s);
+  }
+
+  function getRemoteEventList() {
+    try {
+      const raw = localStorage.getItem(LS_REMOTE_EVENT_LIST);
+      if (!raw) return [...DEFAULT_EVENT_PRESETS];
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return [...DEFAULT_EVENT_PRESETS];
+      const ok = arr.filter((x) => typeof x === "string" && validateEventSlug(x.trim()));
+      return ok.length ? [...new Set(ok)] : [...DEFAULT_EVENT_PRESETS];
+    } catch {
+      return [...DEFAULT_EVENT_PRESETS];
+    }
+  }
+
+  function setRemoteEventList(list) {
+    try {
+      const uniq = [...new Set(list.filter((x) => validateEventSlug(x)))];
+      localStorage.setItem(LS_REMOTE_EVENT_LIST, JSON.stringify(uniq));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function rememberRemoteEventCode(code) {
+    if (!validateEventSlug(code)) return;
+    const list = getRemoteEventList();
+    if (!list.includes(code)) {
+      list.push(code);
+      setRemoteEventList(list);
+    }
+    populateRemoteEventSelect();
+  }
+
+  function populateRemoteEventSelect() {
+    const sel = els.remoteEventPreset;
+    if (!sel) return;
+    const current = els.remoteEvent ? els.remoteEvent.value.trim() : "";
+    const list = getRemoteEventList();
+    sel.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "— Saved events —";
+    sel.append(placeholder);
+    for (const e of list) {
+      const opt = document.createElement("option");
+      opt.value = e;
+      opt.textContent = e;
+      sel.append(opt);
+    }
+    if (current && list.includes(current)) {
+      sel.value = current;
+    } else {
+      sel.value = "";
+    }
   }
 
   function loadRemoteFields() {
@@ -99,6 +170,7 @@
     } catch {
       /* private mode */
     }
+    populateRemoteEventSelect();
   }
 
   function saveRemoteFields() {
@@ -475,6 +547,9 @@
     if (els.btnRemotePublish) els.btnRemotePublish.disabled = playing;
     if (els.btnCopyPlayer169Event) els.btnCopyPlayer169Event.disabled = playing;
     if (els.btnCopyPlayer916Event) els.btnCopyPlayer916Event.disabled = playing;
+    if (els.btnToolbarCopy169Event) els.btnToolbarCopy169Event.disabled = playing;
+    if (els.btnToolbarCopy916Event) els.btnToolbarCopy916Event.disabled = playing;
+    if (els.btnTogglePublishSecret) els.btnTogglePublishSecret.disabled = playing;
   }
 
   function designStateForShare() {
@@ -612,16 +687,23 @@
       setRemoteStatus(`Publish failed: ${err}`, "error");
       return;
     }
+    rememberRemoteEventCode(code);
     setRemoteStatus(
       `Published as “${code}”. Ensure player-config.json is on your site so ?event= links resolve.`,
       "ok"
     );
   }
 
-  async function copyPlayerEventUrl(viewParam, label) {
+  /**
+   * @param {string} viewParam
+   * @param {string} label
+   * @param {(msg: string, kind?: string) => void} [reportStatus]
+   */
+  async function copyPlayerEventUrl(viewParam, label, reportStatus) {
+    const report = typeof reportStatus === "function" ? reportStatus : setRemoteStatus;
     const code = els.remoteEvent ? els.remoteEvent.value.trim() : "";
     if (!validateEventSlug(code)) {
-      setRemoteStatus("Set a valid event code first (e.g. officehours).", "error");
+      report("Set a valid event code (Cloud events → Event code, e.g. OfficeHours).", "error");
       return;
     }
     const u = new URL("player.html", window.location.href);
@@ -629,9 +711,9 @@
     u.searchParams.set("event", code);
     try {
       await navigator.clipboard.writeText(u.href);
-      setRemoteStatus(`Copied ${label} player URL (?event=${code}).`, "ok");
+      report(`Copied ${label} player URL (?event=${code}).`, "ok");
     } catch {
-      setRemoteStatus("Could not copy to clipboard.", "error");
+      report("Could not copy to clipboard.", "error");
     }
   }
 
@@ -836,12 +918,51 @@
   }
   if (els.btnCopyPlayer169Event) {
     els.btnCopyPlayer169Event.addEventListener("click", () => {
-      void copyPlayerEventUrl("16x9", "16:9");
+      void copyPlayerEventUrl("16x9", "16:9", setRemoteStatus);
     });
   }
   if (els.btnCopyPlayer916Event) {
     els.btnCopyPlayer916Event.addEventListener("click", () => {
-      void copyPlayerEventUrl("9x16", "9:16");
+      void copyPlayerEventUrl("9x16", "9:16", setRemoteStatus);
+    });
+  }
+  if (els.btnToolbarCopy169Event) {
+    els.btnToolbarCopy169Event.addEventListener("click", () => {
+      void copyPlayerEventUrl("16x9", "16:9", setToolbarEventUrlStatus);
+    });
+  }
+  if (els.btnToolbarCopy916Event) {
+    els.btnToolbarCopy916Event.addEventListener("click", () => {
+      void copyPlayerEventUrl("9x16", "9:16", setToolbarEventUrlStatus);
+    });
+  }
+
+  if (els.btnTogglePublishSecret && els.remotePublishSecret) {
+    els.btnTogglePublishSecret.addEventListener("click", () => {
+      const hidden = els.remotePublishSecret.type === "password";
+      els.remotePublishSecret.type = hidden ? "text" : "password";
+      els.btnTogglePublishSecret.textContent = hidden ? "Hide" : "Show";
+      els.btnTogglePublishSecret.setAttribute("aria-pressed", String(hidden));
+    });
+  }
+
+  if (els.remoteEventPreset) {
+    els.remoteEventPreset.addEventListener("change", () => {
+      const v = els.remoteEventPreset.value;
+      if (v && els.remoteEvent) {
+        els.remoteEvent.value = v;
+        saveRemoteFields();
+        populateRemoteEventSelect();
+      }
+    });
+  }
+  if (els.remoteEvent) {
+    els.remoteEvent.addEventListener("input", () => {
+      if (!els.remoteEventPreset) return;
+      const t = els.remoteEvent.value.trim();
+      if (els.remoteEventPreset.value && els.remoteEventPreset.value !== t) {
+        els.remoteEventPreset.value = "";
+      }
     });
   }
 

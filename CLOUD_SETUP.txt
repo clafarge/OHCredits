@@ -5,10 +5,30 @@ Why: Static GitHub Pages cannot run a private write API. Supabase gives you a re
 database + HTTPS API. The player only needs the public “anon” key and reads rows
 by event code. Publishing uses a secret that never ships in the player page.
 
+This repo is wired for project ref: uyufnbroqmwjtzvcsosv
+  API URL: https://uyufnbroqmwjtzvcsosv.supabase.co
+  (see player-config.json — you must paste the anon key from Dashboard → Settings → API)
+
+Security
+--------
+If your database password was ever pasted into chat or committed to git, open
+Supabase → Project Settings → Database → reset the database password immediately.
+Never commit connection strings or passwords to this repository.
+
 1) Create a project at https://supabase.com (free tier is enough for many shows).
 
-2) SQL Editor → run the migration in:
-   supabase/migrations/20250328000000_credit_events.sql
+2) Apply the database migration (pick one):
+
+   A) Easiest: Dashboard → SQL → New query → paste the full contents of:
+      supabase/migrations/20250328000000_credit_events.sql
+      → Run.
+
+   B) CLI: install/use psql, or from repo root in PowerShell:
+      $env:DATABASE_URL = "<paste URI from Dashboard → Database; use pooler/Session if needed>"
+      .\scripts\apply-migration.ps1
+
+   Note: Host db.<ref>.supabase.co is often IPv6-only. If tools fail to connect,
+   use the “Connection pooling” / Session mode URI from the dashboard (usually IPv4).
 
 3) Install Supabase CLI (optional) and deploy the Edge Function, or paste
    supabase/functions/publish-credits/index.ts into the Dashboard → Edge Functions

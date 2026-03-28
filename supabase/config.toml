@@ -1,0 +1,4 @@
+# Supabase CLI / Dashboard project reference (from your project URL).
+# Link locally: npx supabase link --project-ref uyufnbroqmwjtzvcsosv
+
+project_id = "uyufnbroqmwjtzvcsosv"

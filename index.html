@@ -33,6 +33,16 @@
           <button type="button" id="btn-copy-player-169" class="btn">Copy 16:9 link (in URL)</button>
           <button type="button" id="btn-copy-player-916" class="btn">Copy 9:16 link (in URL)</button>
         </div>
+        <div class="toolbar-row toolbar-event-urls" aria-label="Copy cloud player URLs">
+          <span class="toolbar-event-urls-label">Cloud player (?event)</span>
+          <button type="button" id="btn-toolbar-copy-169-event" class="btn">
+            Copy 16:9 player URL
+          </button>
+          <button type="button" id="btn-toolbar-copy-916-event" class="btn">
+            Copy 9:16 player URL
+          </button>
+          <span id="toolbar-event-url-status" class="json-status" role="status"></span>
+        </div>
         <div id="json-panel" class="json-panel hidden" hidden>
           <label for="json-input" class="json-label"
             >Paste JSON (episode + credits with role / people)</label
@@ -45,16 +55,23 @@
         </div>
         <div id="remote-panel" class="json-panel remote-panel hidden" hidden>
           <p class="remote-panel-intro">
-            Publish to <strong>Supabase</strong> (free tier) so <code>player.html?event=yourcode</code> loads the design from anywhere. Setup: see <code>CLOUD_SETUP.txt</code>. Use a publish secret only you know; the player only uses the public anon key in <code>player-config.json</code>.
+            Publish to <strong>Supabase</strong> so <code>player.html?event=YourCode</code> loads this layout. The <strong>event</strong> picks which row is updated in the database; the <strong>publish secret</strong> proves you’re allowed to write (same value as <code>PUBLISH_SECRET</code> on your Edge Function—not your DB password). The public player only uses the anon key in <code>player-config.json</code>. Full setup: <code>CLOUD_SETUP.txt</code>.
           </p>
           <div class="remote-fields">
+            <label class="json-label" for="remote-event-preset">Event (quick pick)</label>
+            <p class="remote-field-hint">
+              Choose a saved show id or type your own below. This exact text is used in links as <code>?event=…</code> (e.g. <code>OfficeHours</code>).
+            </p>
+            <select id="remote-event-preset" class="remote-input remote-input--wide" aria-label="Pick saved event code">
+              <option value="">— Saved events —</option>
+            </select>
             <label class="json-label" for="remote-event">Event code</label>
             <input
               id="remote-event"
               type="text"
-              class="remote-input"
+              class="remote-input remote-input--wide"
               maxlength="64"
-              placeholder="officehours"
+              placeholder="OfficeHours"
               autocomplete="off"
               spellcheck="false"
             />
@@ -68,19 +85,46 @@
               spellcheck="false"
             />
             <label class="json-label" for="remote-publish-secret">Publish secret</label>
-            <input
-              id="remote-publish-secret"
-              type="password"
-              class="remote-input remote-input--wide"
-              placeholder="Same value as PUBLISH_SECRET in Supabase"
-              autocomplete="off"
-              spellcheck="false"
-            />
+            <p class="remote-field-hint" id="remote-secret-hint">
+              The bearer token for your <code>publish-credits</code> function (Dashboard → Edge Functions → Secrets → <code>PUBLISH_SECRET</code>). Not the database password and not the anon API key.
+            </p>
+            <div class="remote-secret-row">
+              <input
+                id="remote-publish-secret"
+                type="password"
+                class="remote-input remote-input--secret"
+                placeholder="Your PUBLISH_SECRET value"
+                autocomplete="off"
+                spellcheck="false"
+                aria-describedby="remote-secret-hint"
+              />
+              <button
+                type="button"
+                id="btn-toggle-publish-secret"
+                class="btn btn-secret-toggle"
+                aria-pressed="false"
+                title="Show or hide publish secret"
+              >
+                Show
+              </button>
+            </div>
+          </div>
+          <div class="remote-player-links">
+            <h3 class="remote-player-links-title">Copy player URLs</h3>
+            <p class="remote-field-hint">
+              Uses the <strong>event code</strong> above. Copies <code>player.html?view=…&amp;event=…</code> for third parties (Supabase + <code>player-config.json</code> on your site).
+            </p>
+            <div class="remote-player-links-buttons">
+              <button type="button" id="btn-copy-player-169-event" class="btn primary">
+                Copy 16:9 player URL
+              </button>
+              <button type="button" id="btn-copy-player-916-event" class="btn primary">
+                Copy 9:16 player URL
+              </button>
+            </div>
           </div>
           <div class="json-actions remote-actions">
             <button type="button" id="btn-remote-publish" class="btn primary">Publish design</button>
-            <button type="button" id="btn-copy-player-169-event" class="btn">Copy 16:9 URL (?event)</button>
-            <button type="button" id="btn-copy-player-916-event" class="btn">Copy 9:16 URL (?event)</button>
             <span id="remote-status" class="json-status" role="status"></span>
           </div>
         </div>
