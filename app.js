@@ -21,6 +21,10 @@
 
   const EPISODE_ID = "__episode__";
 
+  /** Fewer than 13 names per visual group when splitting long lists */
+  const PEOPLE_MAX_PER_GROUP = 12;
+  const PEOPLE_GROUP_GAP_PX = 8;
+
   const els = {
     toggleJson: document.getElementById("btn-toggle-json"),
     jsonPanel: document.getElementById("json-panel"),
@@ -64,6 +68,33 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function sortPeopleNames(names) {
+    return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base", numeric: true }));
+  }
+
+  /**
+   * Split a sorted name list into ≤12 per group, sizes as equal as possible.
+   * @param {string[]} sortedNames
+   * @returns {string[][]}
+   */
+  function chunkPeopleGroups(sortedNames) {
+    const n = sortedNames.length;
+    if (n === 0) return [];
+    if (n <= PEOPLE_MAX_PER_GROUP) return [sortedNames];
+    const numGroups = Math.ceil(n / PEOPLE_MAX_PER_GROUP);
+    const base = Math.floor(n / numGroups);
+    const remainder = n % numGroups;
+    /** @type {string[][]} */
+    const groups = [];
+    let idx = 0;
+    for (let g = 0; g < numGroups; g++) {
+      const size = base + (g < remainder ? 1 : 0);
+      groups.push(sortedNames.slice(idx, idx + size));
+      idx += size;
+    }
+    return groups;
   }
 
   function pluralizeWordLower(lower) {
@@ -128,9 +159,15 @@
     const line = LINE_PX * scale;
     if (item.people.length === 0) h += line;
     else {
-      for (const p of item.people) {
-        const lines = Math.max(1, Math.ceil(p.length / cpl));
-        h += lines * line;
+      const groups = chunkPeopleGroups(item.people);
+      for (const g of groups) {
+        for (const p of g) {
+          const lines = Math.max(1, Math.ceil(p.length / cpl));
+          h += lines * line;
+        }
+      }
+      if (groups.length > 1) {
+        h += (groups.length - 1) * PEOPLE_GROUP_GAP_PX * scale;
       }
     }
     h += BLOCK_GAP_PX * scale;
@@ -188,11 +225,17 @@
 
   function creditInnerHtml(item) {
     const roleHtml = escapeHtml(roleForDisplay(item));
-    const list =
-      item.people.length === 0
-        ? `<p class="slide-empty">No names listed</p>`
-        : `<ul class="slide-people">${item.people.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`;
-    return `<h2 class="slide-role">${roleHtml}</h2>${list}`;
+    if (item.people.length === 0) {
+      return `<h2 class="slide-role">${roleHtml}</h2><p class="slide-empty">No names listed</p>`;
+    }
+    const groups = chunkPeopleGroups(item.people);
+    const lists = groups
+      .map(
+        (g) =>
+          `<ul class="slide-people">${g.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`
+      )
+      .join("");
+    return `<h2 class="slide-role">${roleHtml}</h2>${lists}`;
   }
 
   function creditBlockHtml(item, id) {
@@ -256,9 +299,11 @@
       const role = typeof row.role === "string" ? row.role.trim() : "";
       let people = row.people;
       if (!Array.isArray(people)) people = [];
-      const names = people
-        .map((p) => (typeof p === "string" ? p.trim() : String(p)))
-        .filter(Boolean);
+      const names = sortPeopleNames(
+        people
+          .map((p) => (typeof p === "string" ? p.trim() : String(p)))
+          .filter(Boolean)
+      );
       const id = `c-${i}`;
       itemsById.set(id, { role: role || "—", people: names });
       order.push(id);
