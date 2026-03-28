@@ -102,6 +102,18 @@ body {
   background: #224a68;
 }
 
+/* Paste credits JSON: looks “on” while the panel is open (close again for less clutter). */
+#btn-toggle-json[aria-expanded="true"] {
+  background: #1e3350;
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(61, 131, 198, 0.35);
+}
+
+#btn-toggle-json[aria-expanded="true"]:hover:not(:disabled) {
+  background: #264a6e;
+}
+
 .btn-add-page {
   margin-top: 10px;
   align-self: flex-start;
@@ -174,11 +186,27 @@ select.remote-input {
   align-items: center;
 }
 
+.toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
 .toolbar-inline-status {
   flex: 1;
   min-width: 120px;
   max-width: min(420px, 40vw);
   font-size: 12px;
+}
+
+.toolbar-end .toolbar-inline-status {
+  flex: 0 1 280px;
+  min-width: 80px;
+  max-width: min(360px, 42vw);
+  text-align: right;
 }
 
 .dropdown {

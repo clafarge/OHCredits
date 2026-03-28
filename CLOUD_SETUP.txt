@@ -36,6 +36,16 @@ Never commit connection strings or passwords to this repository.
 
    Set project secret: PUBLISH_SECRET = a long random string (password manager).
 
+   IMPORTANT — browser publish from GitHub Pages (CORS):
+   Supabase checks JWT *before* your function runs. The editor sends your
+   PUBLISH_SECRET, not a Supabase JWT, so preflight OPTIONS would fail with a
+   CORS-looking error unless JWT verification is off for this function.
+
+   • CLI deploy: this repo’s supabase/config.toml includes
+     [functions.publish-credits] verify_jwt = false — redeploy after pulling.
+   • Dashboard-only: open the function → Details / Settings → turn OFF
+     “Verify JWT” (or “Enforce JWT verification”) for publish-credits, then save.
+
    In the OHCredits editor, “Publish function URL” must be the Edge Function
    invoke URL — NOT the bare “Project URL” from Settings → API.
    Correct form:

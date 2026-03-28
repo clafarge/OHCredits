@@ -2,3 +2,9 @@
 # Link locally: npx supabase link --project-ref uyufnbroqmwjtzvcsosv
 
 project_id = "uyufnbroqmwjtzvcsosv"
+
+# Required for browser calls from GitHub Pages: default JWT verification runs before
+# your code and rejects OPTIONS preflight (no Supabase JWT). Auth uses PUBLISH_SECRET
+# inside the function instead.
+[functions.publish-credits]
+verify_jwt = false

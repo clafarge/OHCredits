@@ -16,9 +16,6 @@
     <div class="app">
       <header class="toolbar">
         <div class="toolbar-row toolbar-row--primary">
-          <button type="button" id="btn-publish-credits" class="btn primary">Publish credits</button>
-          <span id="toolbar-publish-status" class="json-status toolbar-inline-status" role="status"></span>
-
           <div class="dropdown" id="links-dropdown">
             <button
               type="button"
@@ -65,13 +62,24 @@
           <button type="button" id="btn-toggle-remote" class="btn" aria-expanded="false">
             Cloud settings
           </button>
-          <button type="button" id="btn-toggle-json" class="btn" aria-expanded="false">
+          <button
+            type="button"
+            id="btn-toggle-json"
+            class="btn"
+            aria-expanded="false"
+            title="Opens the JSON and URL fields; click again to hide. Button stays highlighted while open."
+          >
             Paste credits JSON
           </button>
           <button type="button" id="btn-preview" class="btn">Preview first slide</button>
-          <button type="button" id="btn-play-both" class="btn primary">Play both</button>
+          <button type="button" id="btn-play-both" class="btn">Play both</button>
           <button type="button" id="btn-stop" class="btn" disabled>Stop</button>
           <button type="button" id="btn-export-design-json" class="btn">Save design JSON</button>
+
+          <div class="toolbar-end" aria-label="Publish to cloud">
+            <span id="toolbar-publish-status" class="json-status toolbar-inline-status" role="status"></span>
+            <button type="button" id="btn-publish-credits" class="btn primary">Publish credits</button>
+          </div>
         </div>
 
         <div id="json-panel" class="json-panel hidden" hidden>
