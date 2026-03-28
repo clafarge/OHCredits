@@ -120,7 +120,7 @@
    */
   function estimateItemPx(item, aspect) {
     const cpl = CPL[aspect];
-    const scale = aspect === "916" ? 14 / 17 : 1;
+    const scale = aspect === "916" ? 13 / 17 : 1;
     let h = ROLE_BLOCK_PX * scale;
     const line = LINE_PX * scale;
     if (item.people.length === 0) h += line;
@@ -164,9 +164,15 @@
     return out.length ? out : [[]];
   }
 
+  /**
+   * Keep empty pages (e.g. trailing blanks). Collapse to a single [[]] only when no page has any roles.
+   * @param {string[][]} p
+   */
   function normalizePages(p) {
-    const nonEmpty = p.filter((x) => x.length > 0);
-    return nonEmpty.length ? nonEmpty : [[]];
+    if (p.length === 0) return [[]];
+    const anyContent = p.some((pg) => pg.length > 0);
+    if (!anyContent) return [[]];
+    return p;
   }
 
   function creditInnerHtml(item) {
@@ -290,7 +296,7 @@
     renderPageStrip();
   }
 
-  function buildPageBoxHtml(pageIndex, ids) {
+  function buildPageBoxHtml(pageIndex, ids, pageCount) {
     let est169 = 0;
     let est916 = 0;
     for (const id of ids) {
@@ -306,11 +312,14 @@
     if (ratio > 1.2) metaClass = "page-box-meta--bad";
     else if (ratio > 1.05) metaClass = "page-box-meta--warn";
 
-    const metaText = `16:9 ~${Math.round(est169)}/${b169}px · 9:16 ~${Math.round(est916)}/${b916}px`;
+    const metaText =
+      ids.length === 0
+        ? "Blank page"
+        : `16:9 ~${Math.round(est169)}/${b169}px · 9:16 ~${Math.round(est916)}/${b916}px`;
 
     const inner =
       ids.length === 0
-        ? `<p class="slide-empty" style="font-size:12px;margin:12px 0;">Drop roles here</p>`
+        ? `<p class="slide-empty" style="margin:12px 0;">Drop roles here</p>`
         : ids
             .map((id) => {
               const item = itemsById.get(id);
@@ -318,9 +327,15 @@
             })
             .join("");
 
+    const showRemove = ids.length === 0 && pageCount > 1;
+    const removeBtn = showRemove
+      ? `<button type="button" class="page-box-remove" data-page-index="${pageIndex}" aria-label="Remove empty page" title="Remove this page">×</button>`
+      : "";
+
     const fitKey = metaClass.replace("page-box-meta--", "");
     return `
       <div class="page-box page-box--organizer" data-page="${pageIndex}">
+        ${removeBtn}
         <div class="page-box-header">
           <span class="page-box-title">Page ${pageIndex + 1}</span>
           <span class="page-box-meta ${metaClass}" data-estimate="${escapeHtml(metaText)}" data-fit="${fitKey}" title="Estimated content height vs usable height for each format">${metaText}</span>
@@ -342,7 +357,7 @@
       return;
     }
 
-    els.pageStrip.innerHTML = pages.map((ids, i) => buildPageBoxHtml(i, ids)).join("");
+    els.pageStrip.innerHTML = pages.map((ids, i) => buildPageBoxHtml(i, ids, pages.length)).join("");
 
     requestAnimationFrame(() => {
       measurePageOverflow(els.pageStrip);
@@ -375,7 +390,12 @@
     const slides = [];
     if (episodeHtml) slides.push({ html: episodeHtml });
     for (const ids of pages) {
-      if (ids.length === 0) continue;
+      if (ids.length === 0) {
+        slides.push({
+          html: `<div class="slide-page slide-page--blank" aria-label="Blank page"></div>`,
+        });
+        continue;
+      }
       const blocks = ids
         .map((id) => {
           const item = itemsById.get(id);
@@ -624,6 +644,22 @@
   els.btnStop.addEventListener("click", stopPlayout);
 
   els.btnAddPage.addEventListener("click", addEmptyPage);
+
+  els.pageStrip.addEventListener("click", (e) => {
+    const btn = e.target.closest(".page-box-remove");
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (itemsById.size === 0) return;
+    const pi = parseInt(btn.getAttribute("data-page-index") || "-1", 10);
+    if (Number.isNaN(pi) || pi < 0 || pages.length <= 1) return;
+    const pg = pages[pi];
+    if (pg && pg.length === 0) {
+      pages.splice(pi, 1);
+      pages = normalizePages(pages);
+      renderPageStrip();
+    }
+  });
 
   function applyViewFromQuery() {
     const app = document.querySelector(".app");
