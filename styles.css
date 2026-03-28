@@ -276,6 +276,7 @@ body {
   color: var(--role);
   margin: 0 0 0.5em;
   line-height: 1.2;
+  text-transform: uppercase;
 }
 
 .slide-people {
