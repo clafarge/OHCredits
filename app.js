@@ -20,13 +20,17 @@
   /** Shown in the Event quick-pick until you save your own list. */
   const DEFAULT_EVENT_PRESETS = ["OfficeHours"];
 
+  /** Panelists share page 1 with Host/Reader when total panelist names are 0–6 (fewer than 7). */
+  const PANELISTS_MERGE_ON_PAGE1_MAX = 6;
+
   /**
-   * First-load credits template. `_designerPageHint: "starter-v1"` enables page rules:
-   * Host + Reader share page 1; next short roles ~3 per page; remaining rows (heavy lists)
-   * are budget-paginated; the last credit row stays on its own final page.
+   * First-load credits template. `_designerPageHint: "starter-v2"` (recommended): semantic pages —
+   * Host + Reader on page 1; Panelists on page 1 only if fewer than 7 names, else their own page;
+   * Contributors (height-paginated); short roles (≤2 names) ~3 per page; larger groups near the end;
+   * "Special thanks" last. `starter-v1` keeps the older index-based layout.
    */
   const DEFAULT_CREDITS_JSON = `{
-  "_designerPageHint": "starter-v1",
+  "_designerPageHint": "starter-v2",
   "episode": {
     "title": "Your show title",
     "date": "Episode date"
@@ -34,6 +38,16 @@
   "credits": [
     { "role": "Host", "people": ["Name"] },
     { "role": "Reader", "people": ["Name"] },
+    { "role": "Panelists", "people": ["One", "Two", "Three", "Four", "Five"] },
+    {
+      "role": "Contributors",
+      "people": [
+        "Add many names here — this block follows Panelists",
+        "Alex Kim", "Jordan Lee", "Sam Rivera", "Taylor Chen", "Riley Patel",
+        "Casey Wu", "Morgan Diaz", "Jamie Ortiz", "Quinn Brooks", "Avery Ng",
+        "Blake Fox", "Cameron Shah", "Drew Cole", "Emery Park", "Finley Gray"
+      ]
+    },
     { "role": "Executive producer", "people": ["Name"] },
     { "role": "Producer", "people": ["Name"] },
     { "role": "Director", "people": ["Name"] },
@@ -41,12 +55,10 @@
     { "role": "Line producer", "people": ["Name"] },
     { "role": "Editor", "people": ["Name"] },
     {
-      "role": "Contributors",
+      "role": "Production team",
       "people": [
-        "Add many names here — this block is placed toward the end",
-        "Alex Kim", "Jordan Lee", "Sam Rivera", "Taylor Chen", "Riley Patel",
-        "Casey Wu", "Morgan Diaz", "Jamie Ortiz", "Quinn Brooks", "Avery Ng",
-        "Blake Fox", "Cameron Shah", "Drew Cole", "Emery Park", "Finley Gray"
+        "Larger non-panel groups land toward the end",
+        "Rae Santos", "Indigo Moore", "Sky Patel", "Ocean Cruz"
       ]
     },
     { "role": "Special thanks", "people": ["Community", "Sponsors", "Volunteers"] }
@@ -449,6 +461,93 @@
     return pages.length ? pages : [[]];
   }
 
+  function normalizeRoleKey(role) {
+    return (role || "").trim().toLowerCase().replace(/\s+/g, " ");
+  }
+
+  function totalPeopleInRun(run) {
+    let n = 0;
+    for (const id of run.ids) {
+      const it = itemsById.get(id);
+      if (it) n += it.people.length;
+    }
+    return n;
+  }
+
+  function flattenRuns(runList) {
+    const out = [];
+    for (const r of runList) out.push(...r.ids);
+    return out;
+  }
+
+  /**
+   * `_designerPageHint: "starter-v2"`. Page 1 is Host + Reader only, except Panelists may share
+   * page 1 when their total name count is fewer than 7 (see PANELISTS_MERGE_ON_PAGE1_MAX).
+   * @param {string[]} itemOrder
+   * @returns {string[][]}
+   */
+  function paginateSemanticStarterLayout(itemOrder) {
+    const runs = groupItemOrderByCreditRow(itemOrder);
+    /** @type {{ row: number, ids: string[] }[]} */
+    const host = [];
+    /** @type {{ row: number, ids: string[] }[]} */
+    const reader = [];
+    /** @type {{ row: number, ids: string[] }[]} */
+    const panelists = [];
+    /** @type {{ row: number, ids: string[] }[]} */
+    const contributors = [];
+    /** @type {{ row: number, ids: string[] }[]} */
+    const shortRuns = [];
+    /** @type {{ row: number, ids: string[] }[]} */
+    const largeRuns = [];
+    /** @type {{ row: number, ids: string[] }[]} */
+    const closingRuns = [];
+
+    for (const run of runs) {
+      const it0 = itemsById.get(run.ids[0]);
+      if (!it0) continue;
+      const key = normalizeRoleKey(it0.role);
+      const tp = totalPeopleInRun(run);
+
+      if (key === "host") host.push(run);
+      else if (key === "reader") reader.push(run);
+      else if (key === "panelist" || key === "panelists") panelists.push(run);
+      else if (key === "contributor" || key === "contributors") contributors.push(run);
+      else if (key === "special thanks") closingRuns.push(run);
+      else if (tp <= 2) shortRuns.push(run);
+      else largeRuns.push(run);
+    }
+
+    let panelNameTotal = 0;
+    for (const r of panelists) panelNameTotal += totalPeopleInRun(r);
+    const panelIds = flattenRuns(panelists);
+    const mergePanelOnPage1 =
+      panelIds.length > 0 && panelNameTotal <= PANELISTS_MERGE_ON_PAGE1_MAX;
+
+    const pages = [];
+    const page1 = [...flattenRuns(host), ...flattenRuns(reader)];
+    if (mergePanelOnPage1) page1.push(...panelIds);
+    if (page1.length) pages.push(page1);
+
+    if (!mergePanelOnPage1 && panelIds.length) pages.push(panelIds);
+
+    const contribIds = flattenRuns(contributors);
+    if (contribIds.length) pages.push(...autoPaginateShared(contribIds));
+
+    for (let i = 0; i < shortRuns.length; i += 3) {
+      const ids = flattenRuns(shortRuns.slice(i, i + 3));
+      if (ids.length) pages.push(ids);
+    }
+
+    const largeIds = flattenRuns(largeRuns);
+    if (largeIds.length) pages.push(...autoPaginateShared(largeIds));
+
+    const closingIds = flattenRuns(closingRuns);
+    if (closingIds.length) pages.push(...autoPaginateShared(closingIds));
+
+    return pages.length ? pages : [[]];
+  }
+
   /**
    * Keep empty pages (e.g. trailing blanks). Collapse to a single [[]] only when no page has any roles.
    * @param {string[][]} p
@@ -562,16 +661,20 @@
     try {
       const { episodeHtml: ep, itemOrder, designerPageHint } = parseCreditsPayload(t);
       episodeHtml = ep;
-      if (itemOrder.length && designerPageHint === "starter-v1") {
+      if (itemOrder.length && designerPageHint === "starter-v2") {
+        pages = paginateSemanticStarterLayout(itemOrder);
+      } else if (itemOrder.length && designerPageHint === "starter-v1") {
         pages = paginateStarterLayout(itemOrder);
       } else {
         pages = itemOrder.length ? autoPaginateShared(itemOrder) : [[]];
       }
       const n = itemOrder.length;
       const layoutNote =
-        designerPageHint === "starter-v1"
-          ? " Starter page layout (Host+Reader, ~3 roles/page, heavy lists then thanks)."
-          : "";
+        designerPageHint === "starter-v2"
+          ? " Starter layout v2: page 1 Host+Reader (Panelists if fewer than 7 names), then Contributors, ~3 short roles/page, large groups, thanks."
+          : designerPageHint === "starter-v1"
+            ? " Starter page layout (Host+Reader, ~3 roles/page, heavy lists then thanks)."
+            : "";
       report(
         `${n} credit block(s) · ${pages.length} page(s) · long roles split into ≤${PEOPLE_MAX_PER_GROUP} names per block; drag each block separately.${layoutNote}`,
         "ok"
