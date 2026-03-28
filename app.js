@@ -21,9 +21,8 @@
 
   const EPISODE_ID = "__episode__";
 
-  /** Fewer than 13 names per visual group when splitting long lists */
+  /** Roles with more than this many people become separate draggable blocks (same title each). */
   const PEOPLE_MAX_PER_GROUP = 12;
-  const PEOPLE_GROUP_GAP_PX = 8;
 
   const els = {
     toggleJson: document.getElementById("btn-toggle-json"),
@@ -159,15 +158,9 @@
     const line = LINE_PX * scale;
     if (item.people.length === 0) h += line;
     else {
-      const groups = chunkPeopleGroups(item.people);
-      for (const g of groups) {
-        for (const p of g) {
-          const lines = Math.max(1, Math.ceil(p.length / cpl));
-          h += lines * line;
-        }
-      }
-      if (groups.length > 1) {
-        h += (groups.length - 1) * PEOPLE_GROUP_GAP_PX * scale;
+      for (const p of item.people) {
+        const lines = Math.max(1, Math.ceil(p.length / cpl));
+        h += lines * line;
       }
     }
     h += BLOCK_GAP_PX * scale;
@@ -228,14 +221,8 @@
     if (item.people.length === 0) {
       return `<h2 class="slide-role">${roleHtml}</h2><p class="slide-empty">No names listed</p>`;
     }
-    const groups = chunkPeopleGroups(item.people);
-    const lists = groups
-      .map(
-        (g) =>
-          `<ul class="slide-people">${g.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`
-      )
-      .join("");
-    return `<h2 class="slide-role">${roleHtml}</h2>${lists}`;
+    const list = `<ul class="slide-people">${item.people.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`;
+    return `<h2 class="slide-role">${roleHtml}</h2>${list}`;
   }
 
   function creditBlockHtml(item, id) {
@@ -304,9 +291,19 @@
           .map((p) => (typeof p === "string" ? p.trim() : String(p)))
           .filter(Boolean)
       );
-      const id = `c-${i}`;
-      itemsById.set(id, { role: role || "—", people: names });
-      order.push(id);
+      const roleStr = role || "—";
+      const groups = chunkPeopleGroups(names);
+      if (groups.length === 0) {
+        const id = `c-${i}-0`;
+        itemsById.set(id, { role: roleStr, people: [] });
+        order.push(id);
+      } else {
+        groups.forEach((chunk, gi) => {
+          const id = `c-${i}-g${gi}`;
+          itemsById.set(id, { role: roleStr, people: chunk });
+          order.push(id);
+        });
+      }
     }
 
     if (order.length === 0 && !epHtml) throw new Error("No credits or episode content");
@@ -325,7 +322,7 @@
       pages = itemOrder.length ? autoPaginateShared(itemOrder) : [[]];
       const n = itemOrder.length;
       setJsonStatus(
-        `${n} role row(s) · ${pages.length} shared page(s) · auto-split when either format would overflow (estimate).`,
+        `${n} credit block(s) · ${pages.length} page(s) · long roles split into ≤${PEOPLE_MAX_PER_GROUP} names per block; drag each block separately.`,
         "ok"
       );
       renderPageStrip();
