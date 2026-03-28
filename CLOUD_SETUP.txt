@@ -36,15 +36,26 @@ Never commit connection strings or passwords to this repository.
 
    Set project secret: PUBLISH_SECRET = a long random string (password manager).
 
-   IMPORTANT — browser publish from GitHub Pages (CORS):
-   Supabase checks JWT *before* your function runs. The editor sends your
-   PUBLISH_SECRET, not a Supabase JWT, so preflight OPTIONS would fail with a
-   CORS-looking error unless JWT verification is off for this function.
+   IMPORTANT — browser publish from GitHub Pages (CORS + JWT gateway):
+   Supabase can validate JWT *before* your function runs. A browser OPTIONS
+   preflight has no valid JWT, so you usually need JWT verification OFF for
+   publish-credits, and you must redeploy after changing it.
 
-   • CLI deploy: this repo’s supabase/config.toml includes
-     [functions.publish-credits] verify_jwt = false — redeploy after pulling.
-   • Dashboard-only: open the function → Details / Settings → turn OFF
-     “Verify JWT” (or “Enforce JWT verification”) for publish-credits, then save.
+   • CLI (recommended): from the linked repo folder run:
+       supabase functions deploy publish-credits --no-verify-jwt
+     This repo’s supabase/config.toml also sets verify_jwt = false for
+     publish-credits when you deploy with the CLI against a linked project.
+
+   • Dashboard-only: Edge Functions → publish-credits → Settings → turn OFF
+     JWT verification / “Verify JWT” for this function, then redeploy or save
+     so the change applies.
+
+   The editor also loads player-config.json and, when supabaseAnonKey is set,
+   sends Authorization: Bearer <that key> plus X-OHCredits-Publish-Secret for
+   your PUBLISH_SECRET. That helps when JWT verification stays ON and the key
+   is accepted as a gateway token—but preflight can still fail until JWT is off
+   for this function; if you use the new sb_publishable_* keys, keep verify_jwt
+   off unless Supabase documents otherwise for your project.
 
    In the OHCredits editor, “Publish function URL” must be the Edge Function
    invoke URL — NOT the bare “Project URL” from Settings → API.

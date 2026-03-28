@@ -80,6 +80,34 @@
   /** Publish endpoint from editor-config.json (in-memory after fetch). */
   let editorPublishFunctionUrl = "";
 
+  /** Cached supabaseAnonKey from player-config.json (same origin as the editor). */
+  let playerConfigAnonKeyCache = null;
+  let playerConfigAnonKeyLoaded = false;
+
+  /**
+   * Public anon / publishable key for Supabase gateway JWT checks on POST.
+   * Falls back to empty if player-config.json is missing (then use verify_jwt off + Bearer secret only).
+   * @returns {Promise<string>}
+   */
+  async function getSupabaseAnonKeyForPublish() {
+    if (playerConfigAnonKeyLoaded) return playerConfigAnonKeyCache || "";
+    playerConfigAnonKeyLoaded = true;
+    try {
+      const r = await fetch(new URL("player-config.json", window.location.href));
+      if (!r.ok) {
+        playerConfigAnonKeyCache = "";
+        return "";
+      }
+      const j = await r.json();
+      const k = typeof j.supabaseAnonKey === "string" ? j.supabaseAnonKey.trim() : "";
+      playerConfigAnonKeyCache = k;
+      return k;
+    } catch {
+      playerConfigAnonKeyCache = "";
+      return "";
+    }
+  }
+
   function sleep(ms) {
     return OH.sleep(ms);
   }
@@ -850,14 +878,22 @@
 
     saveRemoteFields();
 
+    const anon = await getSupabaseAnonKeyForPublish();
+    /** @type {Record<string, string>} */
+    const headers = { "Content-Type": "application/json" };
+    if (anon) {
+      headers.Authorization = `Bearer ${anon}`;
+      headers.apikey = anon;
+      headers["X-OHCredits-Publish-Secret"] = sec;
+    } else {
+      headers.Authorization = `Bearer ${sec}`;
+    }
+
     let res;
     try {
       res = await fetch(fn, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sec}`,
-        },
+        headers,
         body: JSON.stringify({
           event_code: code,
           design: designStateForShare(),

@@ -5,17 +5,18 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
+// Match https://supabase.com/docs/guides/functions/cors (browser preflight).
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-requested-with",
+    "authorization, x-client-info, apikey, content-type, x-ohcredits-publish-secret, x-requested-with",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Max-Age": "86400",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return new Response("ok", { status: 200, headers: corsHeaders });
   }
 
   if (req.method !== "POST") {
@@ -25,9 +26,14 @@ Deno.serve(async (req) => {
     });
   }
 
-  const publishSecret = Deno.env.get("PUBLISH_SECRET");
+  const publishSecret = Deno.env.get("PUBLISH_SECRET") || "";
+  const headerSecret = (req.headers.get("X-OHCredits-Publish-Secret") || "").trim();
   const auth = req.headers.get("Authorization") || "";
-  if (!publishSecret || auth !== `Bearer ${publishSecret}`) {
+  const bearer = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  const secretOk =
+    !!publishSecret &&
+    (headerSecret === publishSecret || bearer === publishSecret);
+  if (!secretOk) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

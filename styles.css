@@ -469,6 +469,12 @@ select.remote-input {
   letter-spacing: 0.02em;
 }
 
+/* Narrow centered frame: align title with the column center above the preview. */
+.workspace-heading--916 {
+  text-align: center;
+  width: 100%;
+}
+
 .playout-shell {
   display: flex;
   justify-content: center;
