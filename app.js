@@ -4,16 +4,14 @@
   const DISPLAY_MS = 5000;
   const FADE_MS = 500;
 
-  /** Inner content budgets (px) — tuned to match .page-box-inner padding + viewport */
+  /** Inner content budgets (px) — tuned to match page box / playout viewports */
   const BUDGET_PX = { "169": 118, "916": 312 };
 
   /** Chars per line heuristic for wrapped name lines in narrow vs wide boxes */
   const CPL = { "169": 40, "916": 18 };
 
   const LINE_PX = 24;
-  /** Role line + tight gap to names (matches reduced .slide-role margin) */
   const ROLE_BLOCK_PX = 22;
-  /** Space after a credit block before the next (matches larger .slide-credit-gap / margins) */
   const BLOCK_GAP_PX = 21;
 
   const els = {
@@ -24,23 +22,21 @@
     applyJson: document.getElementById("btn-apply-json"),
     slide169: document.getElementById("slide-content-169"),
     slide916: document.getElementById("slide-content-916"),
-    strip169: document.getElementById("page-strip-169"),
-    strip916: document.getElementById("page-strip-916"),
+    pageStrip: document.getElementById("page-strip"),
     btnPreview: document.getElementById("btn-preview"),
     btnPlayBoth: document.getElementById("btn-play-both"),
     btnPlay169: document.getElementById("btn-play-169"),
     btnPlay916: document.getElementById("btn-play-916"),
     btnStop: document.getElementById("btn-stop"),
+    btnAddPage: document.getElementById("btn-add-page"),
   };
 
   /** @type {string | null} */
   let episodeHtml = null;
   /** @type {Map<string, { role: string, people: string[] }>} */
   let itemsById = new Map();
-  /** @type {string[][]} */
-  let pages169 = [[]];
-  /** @type {string[][]} */
-  let pages916 = [[]];
+  /** @type {string[][]} shared page layout for both 16:9 and 9:16 */
+  let pages = [[]];
 
   let playAbort = null;
 
@@ -62,7 +58,6 @@
       .replace(/"/g, "&quot;");
   }
 
-  /** @param {string} lower */
   function pluralizeWordLower(lower) {
     if (!lower) return lower;
     if (/[bcdfghjklmnpqrstvwxyz]y$/.test(lower)) return lower.slice(0, -1) + "ies";
@@ -70,7 +65,6 @@
     return lower + "s";
   }
 
-  /** @param {string} originalToken */
   function pluralizeToken(originalToken) {
     const t = originalToken.trim();
     if (!t) return t;
@@ -85,7 +79,6 @@
     return matchCaseWord(t, pl);
   }
 
-  /** @param {string} original @param {string} pluralLower */
   function matchCaseWord(original, pluralLower) {
     if (!original) return pluralLower;
     if (original === original.toUpperCase()) return pluralLower.toUpperCase();
@@ -99,10 +92,6 @@
     return pluralLower;
   }
 
-  /**
-   * When multiple people share a role, pluralize the appropriate word (e.g. Technical Director → Technical Directors).
-   * @param {string} role
-   */
   function pluralizeRolePhrase(role) {
     const t = role.trim();
     if (!t) return role;
@@ -114,9 +103,6 @@
     return parts.join(" ");
   }
 
-  /**
-   * @param {{ role: string, people: string[] }} item
-   */
   function roleForDisplay(item) {
     const base = item.role || "—";
     if (item.people.length <= 1) return base;
@@ -144,30 +130,37 @@
   }
 
   /**
+   * Start a new page when adding the next role would exceed budget in either aspect.
    * @param {string[]} orderedIds
-   * @param {'169'|'916'} aspect
    */
-  function autoPaginate(orderedIds, aspect) {
-    const budget = BUDGET_PX[aspect];
+  function autoPaginateShared(orderedIds) {
+    const b169 = BUDGET_PX["169"];
+    const b916 = BUDGET_PX["916"];
     /** @type {string[][]} */
-    const pages = [[]];
-    let used = 0;
+    const out = [[]];
+    let used169 = 0;
+    let used916 = 0;
     for (const id of orderedIds) {
       const item = itemsById.get(id);
       if (!item) continue;
-      const need = estimateItemPx(item, aspect);
-      if (used + need > budget && pages[pages.length - 1].length > 0) {
-        pages.push([]);
-        used = 0;
+      const n169 = estimateItemPx(item, "169");
+      const n916 = estimateItemPx(item, "916");
+      const over169 = used169 + n169 > b169;
+      const over916 = used916 + n916 > b916;
+      if ((over169 || over916) && out[out.length - 1].length > 0) {
+        out.push([]);
+        used169 = 0;
+        used916 = 0;
       }
-      pages[pages.length - 1].push(id);
-      used += need;
+      out[out.length - 1].push(id);
+      used169 += n169;
+      used916 += n916;
     }
-    return pages.length ? pages : [[]];
+    return out.length ? out : [[]];
   }
 
-  function normalizePages(pages) {
-    const nonEmpty = pages.filter((p) => p.length > 0);
+  function normalizePages(p) {
+    const nonEmpty = p.filter((x) => x.length > 0);
     return nonEmpty.length ? nonEmpty : [[]];
   }
 
@@ -180,8 +173,8 @@
     return `<h2 class="slide-role">${roleHtml}</h2>${list}`;
   }
 
-  function creditBlockHtml(item, id, aspect) {
-    return `<div class="slide-credit-block credit-draggable" draggable="true" data-credit-id="${escapeHtml(id)}" data-aspect="${aspect}">${creditInnerHtml(item)}</div>`;
+  function creditBlockHtml(item, id) {
+    return `<div class="slide-credit-block credit-draggable" draggable="true" data-credit-id="${escapeHtml(id)}">${creditInnerHtml(item)}</div>`;
   }
 
   function parseCreditsPayload(text) {
@@ -233,22 +226,20 @@
     try {
       const { episodeHtml: ep, itemOrder } = parseCreditsPayload(text);
       episodeHtml = ep;
-      pages169 = itemOrder.length ? autoPaginate(itemOrder, "169") : [[]];
-      pages916 = itemOrder.length ? autoPaginate(itemOrder, "916") : [[]];
+      pages = itemOrder.length ? autoPaginateShared(itemOrder) : [[]];
       const n = itemOrder.length;
       setJsonStatus(
-        `${n} role row(s) · ~${pages169.length} page(s) 16:9 · ~${pages916.length} page(s) 9:16 (estimated).`,
+        `${n} role row(s) · ${pages.length} shared page(s) · auto-split when either format would overflow (estimate).`,
         "ok"
       );
-      renderPageStrips();
+      renderPageStrip();
       renderPlayoutEmpty();
     } catch (e) {
       itemsById = new Map();
       episodeHtml = null;
-      pages169 = [[]];
-      pages916 = [[]];
+      pages = [[]];
       setJsonStatus(e instanceof Error ? e.message : String(e), "error");
-      renderPageStrips();
+      renderPageStrip();
       renderPlayoutEmpty();
     }
   }
@@ -259,18 +250,12 @@
     els.slide916.innerHTML = msg;
   }
 
-  function getPages(aspect) {
-    return aspect === "169" ? pages169 : pages916;
-  }
-
   /**
-   * @param {'169'|'916'} aspect
    * @param {string} id
    * @param {number} toPageIndex
-   * @param {number | null} insertBeforeIndex in target page list (null = append)
+   * @param {number | null} insertBeforeIndex
    */
-  function moveCredit(aspect, id, toPageIndex, insertBeforeIndex) {
-    const pages = getPages(aspect);
+  function moveCredit(id, toPageIndex, insertBeforeIndex) {
     let fromPi = -1;
     let fromIi = -1;
     for (let pi = 0; pi < pages.length; pi++) {
@@ -291,75 +276,71 @@
     if (!pages[toPageIndex]) return;
     pages[toPageIndex].splice(ins, 0, id);
 
-    if (aspect === "169") pages169 = normalizePages(pages);
-    else pages916 = normalizePages(pages);
-
-    renderPageStrips();
+    pages = normalizePages(pages);
+    renderPageStrip();
   }
 
-  function addEmptyPage(aspect) {
-    const pages = getPages(aspect);
+  function addEmptyPage() {
     pages.push([]);
-    if (aspect === "169") pages169 = pages;
-    else pages916 = pages;
-    renderPageStrips();
+    renderPageStrip();
   }
 
-  function buildPageBoxHtml(aspect, pageIndex, ids) {
-    const budget = BUDGET_PX[aspect];
-    let est = 0;
+  function buildPageBoxHtml(pageIndex, ids) {
+    let est169 = 0;
+    let est916 = 0;
     for (const id of ids) {
       const item = itemsById.get(id);
-      if (item) est += estimateItemPx(item, aspect);
+      if (!item) continue;
+      est169 += estimateItemPx(item, "169");
+      est916 += estimateItemPx(item, "916");
     }
+    const b169 = BUDGET_PX["169"];
+    const b916 = BUDGET_PX["916"];
+    const ratio = Math.max(est169 / b169, est916 / b916);
     let metaClass = "page-box-meta--ok";
-    let metaText = `~${Math.round(est)} / ${budget}px`;
-    if (est > budget * 1.05) metaClass = "page-box-meta--warn";
-    if (est > budget * 1.2) metaClass = "page-box-meta--bad";
+    if (ratio > 1.2) metaClass = "page-box-meta--bad";
+    else if (ratio > 1.05) metaClass = "page-box-meta--warn";
+
+    const metaText = `16:9 ~${Math.round(est169)}/${b169}px · 9:16 ~${Math.round(est916)}/${b916}px`;
 
     const inner =
       ids.length === 0
         ? `<p class="slide-empty" style="font-size:12px;margin:12px 0;">Drop roles here</p>`
-        : ids.map((id) => {
-            const item = itemsById.get(id);
-            return item ? creditBlockHtml(item, id, aspect) : "";
-          }).join("");
+        : ids
+            .map((id) => {
+              const item = itemsById.get(id);
+              return item ? creditBlockHtml(item, id) : "";
+            })
+            .join("");
 
     const fitKey = metaClass.replace("page-box-meta--", "");
     return `
-      <div class="page-box page-box--${aspect}" data-aspect="${aspect}" data-page="${pageIndex}">
+      <div class="page-box page-box--organizer" data-page="${pageIndex}">
         <div class="page-box-header">
           <span class="page-box-title">Page ${pageIndex + 1}</span>
-          <span class="page-box-meta ${metaClass}" data-estimate="${escapeHtml(metaText)}" data-fit="${fitKey}" title="Estimated content height vs usable page height">${metaText}</span>
+          <span class="page-box-meta ${metaClass}" data-estimate="${escapeHtml(metaText)}" data-fit="${fitKey}" title="Estimated content height vs usable height for each format">${metaText}</span>
         </div>
         <div class="page-box-viewport" data-drop-page="${pageIndex}">
-          <div class="page-box-inner" data-aspect-inner="${aspect}">${inner}</div>
+          <div class="page-box-inner">${inner}</div>
         </div>
-        <div class="page-box-drop-zone" data-aspect="${aspect}" data-page="${pageIndex}">Drop at end of page</div>
+        <div class="page-box-drop-zone" data-page="${pageIndex}">Drop at end of page</div>
       </div>
     `;
   }
 
-  function renderPageStrips() {
+  function renderPageStrip() {
     if (itemsById.size === 0) {
       const msg = episodeHtml
         ? '<p class="slide-empty" style="font-size:13px;padding:8px 0;">No role rows — only episode title/date. Add credits in JSON for page boxes.</p>'
         : '<p class="slide-empty" style="font-size:13px;padding:8px 0;">Apply JSON to see page boxes.</p>';
-      els.strip169.innerHTML = msg;
-      els.strip916.innerHTML = msg;
+      els.pageStrip.innerHTML = msg;
       return;
     }
 
-    els.strip169.innerHTML = pages169
-      .map((ids, i) => buildPageBoxHtml("169", i, ids))
-      .join("");
-    els.strip916.innerHTML = pages916
-      .map((ids, i) => buildPageBoxHtml("916", i, ids))
-      .join("");
+    els.pageStrip.innerHTML = pages.map((ids, i) => buildPageBoxHtml(i, ids)).join("");
 
     requestAnimationFrame(() => {
-      measurePageOverflow(els.strip169);
-      measurePageOverflow(els.strip916);
+      measurePageOverflow(els.pageStrip);
     });
   }
 
@@ -374,7 +355,7 @@
       if (overflow) {
         meta.classList.remove("page-box-meta--ok", "page-box-meta--warn", "page-box-meta--bad");
         meta.classList.add("page-box-meta--bad");
-        meta.textContent = base ? `${base} · scroll overflow` : "overflow";
+        meta.textContent = base ? `${base} · 16:9 box scroll overflow` : "overflow";
       } else {
         const fit = meta.getAttribute("data-fit") || "ok";
         meta.classList.remove("page-box-meta--ok", "page-box-meta--warn", "page-box-meta--bad");
@@ -384,11 +365,7 @@
     });
   }
 
-  /**
-   * @param {'169'|'916'} aspect
-   */
   function buildSlidesForAspect(aspect) {
-    const pages = getPages(aspect);
     /** @type {{ html: string }[]} */
     const slides = [];
     if (episodeHtml) slides.push({ html: episodeHtml });
@@ -425,11 +402,6 @@
     els.toggleJson.disabled = playing;
   }
 
-  /**
-   * @param {HTMLElement} el
-   * @param {{ html: string }[]} slides
-   * @param {AbortController} ac
-   */
   async function runPlayoutOnElement(el, slides, ac) {
     if (slides.length === 0) return -1;
     el.style.transition = `opacity ${FADE_MS}ms ease`;
@@ -529,7 +501,7 @@
     const raw = e.dataTransfer?.getData("application/x-ohcredit");
     if (!raw) return null;
     try {
-      return /** @type {{ aspect: '169'|'916', id: string }} */ (JSON.parse(raw));
+      return /** @type {{ id: string }} */ (JSON.parse(raw));
     } catch {
       return null;
     }
@@ -541,10 +513,9 @@
     const card = t.closest(".credit-draggable");
     if (!card || !e.dataTransfer) return;
     const id = card.dataset.creditId;
-    const aspect = /** @type {'169'|'916'} */ (card.dataset.aspect);
-    if (!id || !aspect) return;
+    if (!id) return;
     card.classList.add("is-dragging");
-    e.dataTransfer.setData("application/x-ohcredit", JSON.stringify({ aspect, id }));
+    e.dataTransfer.setData("application/x-ohcredit", JSON.stringify({ id }));
     e.dataTransfer.effectAllowed = "move";
   });
 
@@ -596,24 +567,20 @@
 
     const dropZone = t.closest(".page-box-drop-zone");
     if (dropZone) {
-      const aspect = /** @type {'169'|'916'} */ (dropZone.dataset.aspect);
       const pageIndex = parseInt(dropZone.dataset.page || "0", 10);
-      if (aspect !== payload.aspect) return;
-      moveCredit(aspect, payload.id, pageIndex, null);
+      moveCredit(payload.id, pageIndex, null);
       return;
     }
 
     const card = t.closest(".credit-draggable");
-    if (card && card.dataset.aspect === payload.aspect) {
+    if (card) {
       const pageBox = card.closest(".page-box");
       if (!pageBox) return;
-      const aspect = /** @type {'169'|'916'} */ (pageBox.dataset.aspect);
       const pageIndex = parseInt(pageBox.dataset.page || "0", 10);
       const inner = pageBox.querySelector(".page-box-inner");
-      const id = payload.id;
       const siblings = inner ? Array.from(inner.querySelectorAll(".credit-draggable")) : [];
       const insertBefore = siblings.indexOf(card);
-      if (insertBefore >= 0) moveCredit(aspect, id, pageIndex, insertBefore);
+      if (insertBefore >= 0) moveCredit(payload.id, pageIndex, insertBefore);
       return;
     }
 
@@ -621,10 +588,8 @@
     if (viewport) {
       const pageBox = viewport.closest(".page-box");
       if (!pageBox) return;
-      const aspect = /** @type {'169'|'916'} */ (pageBox.dataset.aspect);
       const pageIndex = parseInt(pageBox.dataset.page || "0", 10);
-      if (aspect !== payload.aspect) return;
-      moveCredit(aspect, payload.id, pageIndex, null);
+      moveCredit(payload.id, pageIndex, null);
     }
   });
 
@@ -653,12 +618,7 @@
 
   els.btnStop.addEventListener("click", stopPlayout);
 
-  document.querySelectorAll(".btn-add-page").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const aspect = /** @type {'169'|'916'} */ (btn.getAttribute("data-aspect"));
-      if (aspect === "169" || aspect === "916") addEmptyPage(aspect);
-    });
-  });
+  els.btnAddPage.addEventListener("click", addEmptyPage);
 
   function applyViewFromQuery() {
     const app = document.querySelector(".app");
@@ -676,5 +636,5 @@
   applyViewFromQuery();
 
   renderPlayoutEmpty();
-  renderPageStrips();
+  renderPageStrip();
 })();

@@ -167,6 +167,25 @@ body {
   background: var(--bg);
 }
 
+.layout-section {
+  max-width: 1800px;
+  margin: 0 auto 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.layout-hint {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: #888;
+  line-height: 1.45;
+  max-width: 52rem;
+}
+
+.page-strip--shared {
+  justify-content: flex-start;
+}
+
 .workspace-grid {
   display: flex;
   flex-wrap: wrap;
@@ -309,29 +328,24 @@ body {
   font-style: italic;
 }
 
-/* 9:16 credit copy: 2px smaller than 16:9 (17px → 15px) */
-.frame-9-16 .slide-role,
-.page-box--916 .slide-role {
+/* 9:16 playout only: 2px smaller than 16:9 (17px → 15px) */
+.frame-9-16 .slide-role {
   font-size: 15px;
 }
 
-.frame-9-16 .slide-people,
-.page-box--916 .slide-people {
+.frame-9-16 .slide-people {
   font-size: 15px;
 }
 
-.frame-9-16 .slide-episode-title,
-.page-box--916 .slide-episode-title {
+.frame-9-16 .slide-episode-title {
   font-size: clamp(1rem, 2.4vw, 1.4rem);
 }
 
-.frame-9-16 .slide-episode-date,
-.page-box--916 .slide-episode-date {
+.frame-9-16 .slide-episode-date {
   font-size: clamp(0.82rem, 1.9vw, 1rem);
 }
 
-.frame-9-16 .slide-empty,
-.page-box--916 .slide-empty {
+.frame-9-16 .slide-empty {
   font-size: 14px;
 }
 
@@ -353,20 +367,17 @@ body {
   overflow: hidden;
 }
 
-.page-box--169 {
+/* Shared organizer: 16:9 mini frame, 17px type (matches 16:9 playout) */
+.page-box--organizer {
   width: 280px;
-}
-
-.page-box--916 {
-  width: 200px;
 }
 
 .page-box-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   padding: 6px 8px;
   font-size: 11px;
   color: #9a9a9a;
@@ -402,12 +413,8 @@ body {
   overflow: hidden;
 }
 
-.page-box--169 .page-box-viewport {
+.page-box--organizer .page-box-viewport {
   aspect-ratio: 16 / 9;
-}
-
-.page-box--916 .page-box-viewport {
-  aspect-ratio: 9 / 16;
 }
 
 .page-box-viewport.page-box-drop-target {

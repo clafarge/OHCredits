@@ -38,9 +38,18 @@
       </header>
 
       <main class="workspace">
+        <section class="layout-section" aria-labelledby="heading-pages">
+          <h2 id="heading-pages" class="workspace-heading">Pages</h2>
+          <p class="layout-hint">
+            One layout for both formats — drag roles between boxes. Estimates show height vs budget for 16:9 and 9:16.
+          </p>
+          <div id="page-strip" class="page-strip page-strip--shared"></div>
+          <button type="button" id="btn-add-page" class="btn btn-add-page">Add page</button>
+        </section>
+
         <div class="workspace-grid">
           <section class="workspace-col" aria-labelledby="heading-169">
-            <h2 id="heading-169" class="workspace-heading">16:9</h2>
+            <h2 id="heading-169" class="workspace-heading">16:9 preview</h2>
             <div class="playout-shell">
               <div class="frame frame-16-9 playout-frame">
                 <div class="frame-inner">
@@ -50,12 +59,10 @@
                 </div>
               </div>
             </div>
-            <div id="page-strip-169" class="page-strip" data-aspect="169"></div>
-            <button type="button" class="btn btn-add-page" data-aspect="169">Add page</button>
           </section>
 
           <section class="workspace-col" aria-labelledby="heading-916">
-            <h2 id="heading-916" class="workspace-heading">9:16</h2>
+            <h2 id="heading-916" class="workspace-heading">9:16 preview</h2>
             <div class="playout-shell playout-shell--916">
               <div class="frame frame-9-16 playout-frame">
                 <div class="frame-inner">
@@ -65,8 +72,6 @@
                 </div>
               </div>
             </div>
-            <div id="page-strip-916" class="page-strip" data-aspect="916"></div>
-            <button type="button" class="btn btn-add-page" data-aspect="916">Add page</button>
           </section>
         </div>
       </main>
