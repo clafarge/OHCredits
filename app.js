@@ -120,7 +120,7 @@
    */
   function estimateItemPx(item, aspect) {
     const cpl = CPL[aspect];
-    const scale = aspect === "916" ? 15 / 17 : 1;
+    const scale = aspect === "916" ? 16 / 17 : 1;
     let h = ROLE_BLOCK_PX * scale;
     const line = LINE_PX * scale;
     if (item.people.length === 0) h += line;
