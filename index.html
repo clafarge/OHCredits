@@ -19,15 +19,9 @@
           <button type="button" id="btn-toggle-json" class="btn primary" aria-expanded="false">
             Paste credits JSON
           </button>
-          <label class="ratio-toggle">
-            <span class="sr-only">Aspect ratio</span>
-            <select id="aspect-ratio" aria-label="Preview aspect ratio">
-              <option value="16-9">16:9</option>
-              <option value="9-16">9:16</option>
-            </select>
-          </label>
           <button type="button" id="btn-preview" class="btn">Preview first slide</button>
-          <button type="button" id="btn-play" class="btn">Play all</button>
+          <button type="button" id="btn-play-169" class="btn">Play 16:9</button>
+          <button type="button" id="btn-play-916" class="btn">Play 9:16</button>
           <button type="button" id="btn-stop" class="btn" disabled>Stop</button>
         </div>
         <div id="json-panel" class="json-panel hidden" hidden>
@@ -42,13 +36,37 @@
         </div>
       </header>
 
-      <main class="stage-wrap">
-        <div id="frame" class="frame frame-16-9" data-ratio="16-9">
-          <div class="frame-inner">
-            <div id="slide-layer" class="slide-layer">
-              <div id="slide-content" class="slide-content" aria-live="polite"></div>
+      <main class="workspace">
+        <div class="workspace-grid">
+          <section class="workspace-col" aria-labelledby="heading-169">
+            <h2 id="heading-169" class="workspace-heading">16:9</h2>
+            <div class="playout-shell">
+              <div class="frame frame-16-9 playout-frame">
+                <div class="frame-inner">
+                  <div class="slide-layer">
+                    <div id="slide-content-169" class="slide-content" aria-live="polite"></div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+            <div id="page-strip-169" class="page-strip" data-aspect="169"></div>
+            <button type="button" class="btn btn-add-page" data-aspect="169">Add page</button>
+          </section>
+
+          <section class="workspace-col" aria-labelledby="heading-916">
+            <h2 id="heading-916" class="workspace-heading">9:16</h2>
+            <div class="playout-shell playout-shell--916">
+              <div class="frame frame-9-16 playout-frame">
+                <div class="frame-inner">
+                  <div class="slide-layer">
+                    <div id="slide-content-916" class="slide-content" aria-live="polite"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="page-strip-916" class="page-strip" data-aspect="916"></div>
+            <button type="button" class="btn btn-add-page" data-aspect="916">Add page</button>
+          </section>
         </div>
       </main>
     </div>

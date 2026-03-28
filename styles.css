@@ -91,14 +91,9 @@ body {
   background: #224a68;
 }
 
-.ratio-toggle select {
-  font-family: inherit;
-  font-size: 14px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: #222;
-  color: #e0e0e0;
+.btn-add-page {
+  margin-top: 10px;
+  align-self: flex-start;
 }
 
 .json-panel {
@@ -154,17 +149,53 @@ body {
   color: #81c784;
 }
 
-.stage-wrap {
+.workspace {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 16px 32px;
+  padding: 16px;
+  overflow: auto;
   background: var(--bg);
 }
 
+.workspace-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 32px;
+  align-items: flex-start;
+  justify-content: center;
+  max-width: 1800px;
+  margin: 0 auto;
+}
+
+.workspace-col {
+  flex: 1 1 420px;
+  min-width: 280px;
+  max-width: 820px;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace-heading {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ccc;
+  letter-spacing: 0.02em;
+}
+
+.playout-shell {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.playout-shell--916 .playout-frame {
+  width: min(200px, 36vw);
+  max-height: min(72vh, 640px);
+}
+
 .frame {
-  width: min(92vw, 960px);
+  width: 100%;
+  max-width: min(100%, 720px);
   background: #000;
   border: 1px solid #2a2a2a;
   border-radius: 8px;
@@ -177,8 +208,6 @@ body {
 }
 
 .frame-9-16 {
-  width: min(42vw, 360px);
-  max-height: min(88vh, 920px);
   aspect-ratio: 9 / 16;
 }
 
@@ -209,6 +238,22 @@ body {
 
 .slide-content.is-hidden {
   opacity: 0;
+}
+
+.slide-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.slide-credit-gap {
+  height: 1.15em;
+  flex-shrink: 0;
+}
+
+.slide-credit-block {
+  text-align: center;
 }
 
 .slide-episode-title {
@@ -250,4 +295,141 @@ body {
 .slide-empty {
   color: #666;
   font-style: italic;
+}
+
+.page-strip {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.page-box {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  background: #0a0a0a;
+  overflow: hidden;
+}
+
+.page-box--169 {
+  width: 280px;
+}
+
+.page-box--916 {
+  width: 200px;
+}
+
+.page-box-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: #9a9a9a;
+  background: #161616;
+  border-bottom: 1px solid var(--border);
+}
+
+.page-box-title {
+  font-weight: 600;
+  color: #bbb;
+}
+
+.page-box-meta {
+  font-variant-numeric: tabular-nums;
+}
+
+.page-box-meta--ok {
+  color: #7cb87c;
+}
+
+.page-box-meta--warn {
+  color: #c9a227;
+}
+
+.page-box-meta--bad {
+  color: #c97a7a;
+}
+
+.page-box-viewport {
+  position: relative;
+  width: 100%;
+  background: #000;
+  overflow: hidden;
+}
+
+.page-box--169 .page-box-viewport {
+  aspect-ratio: 16 / 9;
+}
+
+.page-box--916 .page-box-viewport {
+  aspect-ratio: 9 / 16;
+}
+
+.page-box-viewport.page-box-drop-target {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+}
+
+.page-box-inner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  text-align: center;
+}
+
+.page-box-inner--overflow {
+  box-shadow: inset 0 0 0 2px rgba(201, 122, 122, 0.55);
+}
+
+.credit-draggable {
+  cursor: grab;
+  margin-bottom: 10px;
+  padding: 6px 4px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.credit-draggable:last-child {
+  margin-bottom: 0;
+}
+
+.credit-draggable:hover {
+  border-color: #444;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.credit-draggable:active {
+  cursor: grabbing;
+}
+
+.credit-draggable.is-dragging {
+  opacity: 0.45;
+}
+
+.page-box-drop-zone {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #555;
+  border-top: 1px dashed #333;
+  padding: 6px;
+}
+
+.page-box-drop-zone.page-box-drop-target {
+  color: var(--accent);
+  background: rgba(61, 131, 198, 0.12);
 }
