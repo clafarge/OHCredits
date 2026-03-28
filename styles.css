@@ -294,8 +294,8 @@ body {
   font-size: clamp(1.1rem, 2.8vw, 1.6rem);
   font-weight: 600;
   color: var(--role);
-  margin: 0 0 0.35em;
-  line-height: 1.25;
+  margin: 0 0 0.2em;
+  line-height: 1.2;
 }
 
 .slide-episode-date {
@@ -308,7 +308,7 @@ body {
   font-size: 17px;
   font-weight: 700;
   color: var(--role);
-  margin: 0 0 0.25em;
+  margin: 0 0 0.125em;
   line-height: 1.2;
   text-transform: uppercase;
 }
@@ -320,11 +320,11 @@ body {
   color: var(--name);
   font-size: 17px;
   font-weight: 700;
-  line-height: 1.45;
+  line-height: 1.35;
 }
 
 .slide-people li + li {
-  margin-top: 0.25em;
+  margin-top: 0.1em;
 }
 
 .slide-empty {
@@ -343,6 +343,11 @@ body {
 
 .frame-9-16 .slide-people {
   font-size: 13px;
+  line-height: 1.35;
+}
+
+.frame-9-16 .slide-people li + li {
+  margin-top: 0.1em;
 }
 
 .frame-9-16 .slide-episode-title {
@@ -355,6 +360,41 @@ body {
 
 .frame-9-16 .slide-empty {
   font-size: 11px;
+}
+
+.episode-tray-host {
+  margin-bottom: 16px;
+}
+
+.episode-tray {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px dashed #444;
+  background: #0d0d0d;
+  max-width: 52rem;
+}
+
+.episode-tray.episode-tray--drop-target {
+  border-color: var(--accent);
+  background: rgba(61, 131, 198, 0.08);
+}
+
+.episode-tray-sink-msg {
+  margin: 0;
+  font-size: 13px;
+  color: #aaa;
+  line-height: 1.45;
+}
+
+.episode-tray-chip-wrap {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.slide-episode-block {
+  text-align: center;
+  max-width: 100%;
 }
 
 .page-strip {
@@ -419,16 +459,25 @@ body {
 .page-box--organizer .slide-role {
   font-size: 13px;
   line-height: 1.15;
-  margin: 0 0 0.12em;
+  margin: 0 0 0.08em;
 }
 
 .page-box--organizer .slide-people {
   font-size: 13px;
-  line-height: 1.3;
+  line-height: 1.28;
 }
 
 .page-box--organizer .slide-people li + li {
-  margin-top: 0.1em;
+  margin-top: 0.06em;
+}
+
+.page-box--organizer .slide-episode-title {
+  font-size: clamp(0.75rem, 1.8vw, 0.95rem);
+  margin: 0 0 0.12em;
+}
+
+.page-box--organizer .slide-episode-date {
+  font-size: clamp(0.68rem, 1.5vw, 0.82rem);
 }
 
 .page-box--organizer .slide-empty {

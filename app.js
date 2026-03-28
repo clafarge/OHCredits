@@ -14,10 +14,12 @@
   /** Chars per line heuristic for wrapped name lines in narrow vs wide boxes */
   const CPL = { "169": 44, "916": 20 };
 
-  /** Per-credit stack: role + names + gap below block (matches real CSS ~17px/15px type) */
+  /** Per-credit stack: role + names + gap below block (matches tightened CSS margins) */
   const LINE_PX = 22;
-  const ROLE_BLOCK_PX = 20;
+  const ROLE_BLOCK_PX = 18;
   const BLOCK_GAP_PX = 14;
+
+  const EPISODE_ID = "__episode__";
 
   const els = {
     toggleJson: document.getElementById("btn-toggle-json"),
@@ -28,6 +30,7 @@
     slide169: document.getElementById("slide-content-169"),
     slide916: document.getElementById("slide-content-916"),
     pageStrip: document.getElementById("page-strip"),
+    episodeTrayHost: document.getElementById("episode-tray-host"),
     btnPreview: document.getElementById("btn-preview"),
     btnPlayBoth: document.getElementById("btn-play-both"),
     btnPlay169: document.getElementById("btn-play-169"),
@@ -135,6 +138,14 @@
   }
 
   /**
+   * @param {'169'|'916'} aspect
+   */
+  function estimateEpisodePx(aspect) {
+    const scale = aspect === "916" ? 13 / 17 : 1;
+    return Math.round((40 + 30 + BLOCK_GAP_PX) * scale);
+  }
+
+  /**
    * Start a new page when adding the next role would exceed budget in either aspect.
    * @param {string[]} orderedIds
    */
@@ -186,6 +197,35 @@
 
   function creditBlockHtml(item, id) {
     return `<div class="slide-credit-block credit-draggable" draggable="true" data-credit-id="${escapeHtml(id)}">${creditInnerHtml(item)}</div>`;
+  }
+
+  function episodeBlockHtml() {
+    if (!episodeHtml) return "";
+    return `<div class="slide-credit-block slide-episode-block credit-draggable" draggable="true" data-credit-id="${EPISODE_ID}">${episodeHtml}</div>`;
+  }
+
+  function episodeOnAPage() {
+    return pages.some((pg) => pg.includes(EPISODE_ID));
+  }
+
+  function renderEpisodeTray() {
+    const host = els.episodeTrayHost;
+    if (!host) return;
+    if (!episodeHtml) {
+      host.innerHTML = "";
+      return;
+    }
+    const onPage = episodeOnAPage();
+    host.innerHTML = onPage
+      ? `<div class="episode-tray" data-episode-tray-drop="1" aria-label="Drop zone to remove episode from show">
+          <p class="episode-tray-sink-msg">Drop the <strong>title & date</strong> block here to omit it from the show (or drag it between pages below).</p>
+        </div>`
+      : `<div class="episode-tray" data-episode-tray-drop="1">
+          <p class="layout-hint episode-tray-hint" style="margin:0 0 10px;">
+            Drag <strong>title & date</strong> onto a page below to include them, or leave here to skip. Use a <strong>blank first page</strong> to fade from black into title or credits.
+          </p>
+          <div class="episode-tray-chip-wrap">${episodeBlockHtml()}</div>
+        </div>`;
   }
 
   function parseCreditsPayload(text) {
@@ -266,7 +306,17 @@
    * @param {number} toPageIndex
    * @param {number | null} insertBeforeIndex
    */
+  function stripEpisodeFromPages() {
+    for (const pg of pages) {
+      let idx;
+      while ((idx = pg.indexOf(EPISODE_ID)) !== -1) pg.splice(idx, 1);
+    }
+  }
+
   function moveCredit(id, toPageIndex, insertBeforeIndex) {
+    if (id === EPISODE_ID && !episodeHtml) return;
+    if (!pages[toPageIndex]) return;
+
     let fromPi = -1;
     let fromIi = -1;
     for (let pi = 0; pi < pages.length; pi++) {
@@ -277,16 +327,26 @@
         break;
       }
     }
-    if (fromPi === -1) return;
 
-    pages[fromPi].splice(fromIi, 1);
+    if (id !== EPISODE_ID && fromPi === -1) return;
+
+    if (id === EPISODE_ID) {
+      stripEpisodeFromPages();
+    } else {
+      pages[fromPi].splice(fromIi, 1);
+    }
 
     let ins = insertBeforeIndex == null ? pages[toPageIndex].length : insertBeforeIndex;
     if (ins < 0) ins = 0;
-    if (fromPi === toPageIndex && fromIi < ins) ins -= 1;
-    if (!pages[toPageIndex]) return;
-    pages[toPageIndex].splice(ins, 0, id);
+    if (fromPi === toPageIndex && id !== EPISODE_ID && fromIi < ins) ins -= 1;
 
+    pages[toPageIndex].splice(ins, 0, id);
+    pages = normalizePages(pages);
+    renderPageStrip();
+  }
+
+  function removeEpisodeFromShow() {
+    stripEpisodeFromPages();
     pages = normalizePages(pages);
     renderPageStrip();
   }
@@ -300,6 +360,11 @@
     let est169 = 0;
     let est916 = 0;
     for (const id of ids) {
+      if (id === EPISODE_ID) {
+        est169 += estimateEpisodePx("169");
+        est916 += estimateEpisodePx("916");
+        continue;
+      }
       const item = itemsById.get(id);
       if (!item) continue;
       est169 += estimateItemPx(item, "169");
@@ -322,6 +387,7 @@
         ? `<p class="slide-empty" style="margin:12px 0;">Drop roles here</p>`
         : ids
             .map((id) => {
+              if (id === EPISODE_ID) return episodeBlockHtml();
               const item = itemsById.get(id);
               return item ? creditBlockHtml(item, id) : "";
             })
@@ -349,11 +415,17 @@
   }
 
   function renderPageStrip() {
-    if (itemsById.size === 0) {
-      const msg = episodeHtml
-        ? '<p class="slide-empty" style="font-size:13px;padding:8px 0;">No role rows — only episode title/date. Add credits in JSON for page boxes.</p>'
-        : '<p class="slide-empty" style="font-size:13px;padding:8px 0;">Apply JSON to see page boxes.</p>';
-      els.pageStrip.innerHTML = msg;
+    renderEpisodeTray();
+
+    if (itemsById.size === 0 && !episodeHtml) {
+      els.pageStrip.innerHTML =
+        '<p class="slide-empty" style="font-size:13px;padding:8px 0;">Apply JSON to see page boxes.</p>';
+      return;
+    }
+
+    if (itemsById.size === 0 && episodeHtml) {
+      els.pageStrip.innerHTML = pages.map((ids, i) => buildPageBoxHtml(i, ids, pages.length)).join("");
+      requestAnimationFrame(() => measurePageOverflow(els.pageStrip));
       return;
     }
 
@@ -388,7 +460,6 @@
   function buildSlidesForAspect(aspect) {
     /** @type {{ html: string }[]} */
     const slides = [];
-    if (episodeHtml) slides.push({ html: episodeHtml });
     for (const ids of pages) {
       if (ids.length === 0) {
         slides.push({
@@ -398,10 +469,11 @@
       }
       const blocks = ids
         .map((id) => {
+          if (id === EPISODE_ID && episodeHtml) {
+            return `<div class="slide-credit-block slide-episode-block">${episodeHtml}</div>`;
+          }
           const item = itemsById.get(id);
-          return item
-            ? `<div class="slide-credit-block">${creditInnerHtml(item)}</div>`
-            : "";
+          return item ? `<div class="slide-credit-block">${creditInnerHtml(item)}</div>` : "";
         })
         .filter(Boolean);
       const gaps = blocks.length > 1 ? blocks.join('<div class="slide-credit-gap"></div>') : blocks[0];
@@ -509,9 +581,9 @@
 
   function previewFirstSlide() {
     stopPlayout();
-    if (itemsById.size === 0) {
+    if (itemsById.size === 0 && !episodeHtml) {
       applyJsonFromInput();
-      if (itemsById.size === 0) return;
+      if (itemsById.size === 0 && !episodeHtml) return;
     }
     const s169 = buildSlidesForAspect("169");
     const s916 = buildSlidesForAspect("916");
@@ -550,12 +622,13 @@
     const card = t.closest(".credit-draggable");
     if (card) card.classList.remove("is-dragging");
     document.querySelectorAll(".page-box-drop-target").forEach((n) => n.classList.remove("page-box-drop-target"));
+    document.querySelectorAll(".episode-tray").forEach((n) => n.classList.remove("episode-tray--drop-target"));
   });
 
   document.addEventListener("dragover", (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
-    const zone = t.closest("[data-drop-page], .page-box-drop-zone, .credit-draggable");
+    const zone = t.closest("[data-drop-page], .page-box-drop-zone, .credit-draggable, [data-episode-tray-drop]");
     if (!zone) return;
     const payload = e.dataTransfer?.types.includes("application/x-ohcredit");
     if (!payload) return;
@@ -566,14 +639,27 @@
   document.addEventListener("dragenter", (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
+    if (!e.dataTransfer?.types.includes("application/x-ohcredit")) return;
+    const tray = t.closest("[data-episode-tray-drop]");
+    if (tray) {
+      tray.classList.add("episode-tray--drop-target");
+      return;
+    }
     const zone = t.closest(".page-box-viewport, .page-box-drop-zone");
-    if (!zone || !e.dataTransfer?.types.includes("application/x-ohcredit")) return;
+    if (!zone) return;
     zone.classList.add("page-box-drop-target");
   });
 
   document.addEventListener("dragleave", (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
+    const tray = t.closest("[data-episode-tray-drop]");
+    if (tray) {
+      if (!tray.contains(/** @type {Node} */ (e.relatedTarget))) {
+        tray.classList.remove("episode-tray--drop-target");
+      }
+      return;
+    }
     const zone = t.closest(".page-box-viewport, .page-box-drop-zone");
     if (!zone) return;
     if (!zone.contains(/** @type {Node} */ (e.relatedTarget))) {
@@ -589,6 +675,13 @@
     if (!payload) return;
 
     document.querySelectorAll(".page-box-drop-target").forEach((n) => n.classList.remove("page-box-drop-target"));
+    document.querySelectorAll(".episode-tray").forEach((n) => n.classList.remove("episode-tray--drop-target"));
+
+    const trayDrop = t.closest("[data-episode-tray-drop]");
+    if (trayDrop && payload.id === EPISODE_ID) {
+      removeEpisodeFromShow();
+      return;
+    }
 
     const dropZone = t.closest(".page-box-drop-zone");
     if (dropZone) {
@@ -650,7 +743,7 @@
     if (!btn) return;
     e.preventDefault();
     e.stopPropagation();
-    if (itemsById.size === 0) return;
+    if (itemsById.size === 0 && !episodeHtml) return;
     const pi = parseInt(btn.getAttribute("data-page-index") || "-1", 10);
     if (Number.isNaN(pi) || pi < 0 || pages.length <= 1) return;
     const pg = pages[pi];
