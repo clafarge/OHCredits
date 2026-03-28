@@ -170,20 +170,108 @@ select.remote-input {
   appearance: auto;
 }
 
-.toolbar-event-urls {
-  flex-wrap: wrap;
+.toolbar-row--primary {
   align-items: center;
-  gap: 8px;
-  padding-top: 4px;
-  border-top: 1px solid #2a2a2a;
-  margin-top: 6px;
 }
 
-.toolbar-event-urls-label {
+.toolbar-inline-status {
+  flex: 1;
+  min-width: 120px;
+  max-width: min(420px, 40vw);
   font-size: 12px;
+}
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 300px;
+  z-index: 100;
+  padding: 6px 0 10px;
+  background: #161616;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+
+.dropdown-panel.hidden {
+  display: none !important;
+}
+
+.dropdown-panel-title {
+  padding: 8px 14px 4px;
+  font-size: 11px;
   font-weight: 600;
-  color: #888;
-  margin-right: 4px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dropdown-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  color: #ddd;
+  cursor: pointer;
+}
+
+.dropdown-menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dropdown-menu-status {
+  margin: 10px 16px 0;
+  font-size: 12px;
+  line-height: 1.35;
+  min-height: 1.35em;
+  color: #777;
+}
+
+.dropdown-menu-status.ok {
+  color: #7cb87c;
+}
+
+.dropdown-menu-status.error {
+  color: #c97a7a;
+}
+
+.json-url-hint {
+  margin: -4px 0 8px;
+  font-size: 12px;
+  color: #777;
+  line-height: 1.4;
+  max-width: 720px;
+}
+
+.json-url-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+  max-width: 720px;
+}
+
+.json-url-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #3a3a3a;
+  background: #141414;
+  color: #e8e8e8;
+  font-family: inherit;
+  font-size: 14px;
 }
 
 .remote-secret-row {
@@ -227,6 +315,29 @@ select.remote-input {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 10px;
+}
+
+.remote-editor-config-url {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+  line-height: 1.4;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #101010;
+  color: #9ad29a;
+  max-width: 640px;
+}
+
+.remote-editor-config-url.remote-editor-config-url--bad {
+  color: #e0a0a0;
+  border-color: #553333;
+}
+
+.btn-reload-editor-config {
+  margin-bottom: 14px;
 }
 
 .remote-actions {

@@ -41,18 +41,21 @@ Never commit connection strings or passwords to this repository.
    Correct form:
    https://YOUR_REF.supabase.co/functions/v1/publish-credits
 
-4) On your GitHub Pages site (same folder as player.html), add player-config.json
-   by copying player-config.example.json and filling in:
-   - supabaseUrl: Project Settings → API → Project URL
-   - supabaseAnonKey: Project Settings → API → anon public key
+4) On your GitHub Pages site (same folder as index.html / player.html):
 
-   Commit player-config.json. The anon key is safe here if RLS only allows SELECT
-   on credit_events (see migration). Never commit the service_role key.
+   - editor-config.json — copy editor-config.example.json and set publishFunctionUrl
+     to your Edge Function invoke URL (…/functions/v1/publish-credits). Commit it.
+
+   - player-config.json — copy player-config.example.json and fill in:
+     - supabaseUrl: Project Settings → API → Project URL
+     - supabaseAnonKey: Project Settings → API → anon public key
+     Commit player-config.json. The anon key is safe here if RLS only allows SELECT
+     on credit_events (see migration). Never commit the service_role key.
 
 5) In the OHCredits editor → “Cloud events”:
-   - Event code: e.g. officehours
-   - Publish function URL: your …/functions/v1/publish-credits
-   - Publish secret: same as PUBLISH_SECRET
+   - Event code: e.g. OfficeHours
+   - Publish secret: same as PUBLISH_SECRET (typed in the page; stored only in
+     browser localStorage, not in JSON)
    Click “Publish design”, then copy “16:9 / 9:16 URL (?event)” for third parties.
 
 6) Third parties open:

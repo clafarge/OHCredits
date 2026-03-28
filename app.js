@@ -11,9 +11,11 @@
   const EXPORT_DESIGN_FILENAME = "ohcredits-design.json";
 
   const LS_REMOTE_EVENT = "ohcredits_remote_event";
-  const LS_REMOTE_FN = "ohcredits_remote_function_url";
+  /** @deprecated removed from UI; clear if present */
+  const LS_REMOTE_FN_LEGACY = "ohcredits_remote_function_url";
   const LS_REMOTE_SECRET = "ohcredits_remote_publish_secret";
   const LS_REMOTE_EVENT_LIST = "ohcredits_remote_event_list";
+  const LS_JSON_URL = "ohcredits_last_json_url";
 
   /** Shown in the Event quick-pick until you save your own list. */
   const DEFAULT_EVENT_PRESETS = ["OfficeHours"];
@@ -45,29 +47,25 @@
     episodeTrayHost: document.getElementById("episode-tray-host"),
     btnPreview: document.getElementById("btn-preview"),
     btnPlayBoth: document.getElementById("btn-play-both"),
-    btnPlay169: document.getElementById("btn-play-169"),
-    btnPlay916: document.getElementById("btn-play-916"),
     btnStop: document.getElementById("btn-stop"),
     btnAddPage: document.getElementById("btn-add-page"),
-    btnCopyPlayer169: document.getElementById("btn-copy-player-169"),
-    btnCopyPlayer916: document.getElementById("btn-copy-player-916"),
-    btnCopyPlayer169Json: document.getElementById("btn-copy-player-169-json"),
-    btnCopyPlayer916Json: document.getElementById("btn-copy-player-916-json"),
     btnExportDesignJson: document.getElementById("btn-export-design-json"),
+    btnPublishCredits: document.getElementById("btn-publish-credits"),
+    toolbarPublishStatus: document.getElementById("toolbar-publish-status"),
+    btnMenuLinks: document.getElementById("btn-menu-links"),
+    panelMenuLinks: document.getElementById("panel-menu-links"),
+    linksMenuStatus: document.getElementById("links-menu-status"),
+    linksDropdown: document.getElementById("links-dropdown"),
     toggleRemote: document.getElementById("btn-toggle-remote"),
     remotePanel: document.getElementById("remote-panel"),
     remoteEventPreset: document.getElementById("remote-event-preset"),
     remoteEvent: document.getElementById("remote-event"),
-    remoteFunctionUrl: document.getElementById("remote-function-url"),
+    remoteEditorConfigUrl: document.getElementById("remote-editor-config-url"),
+    btnReloadEditorConfig: document.getElementById("btn-reload-editor-config"),
     remotePublishSecret: document.getElementById("remote-publish-secret"),
-    btnRemotePublish: document.getElementById("btn-remote-publish"),
-    btnCopyPlayer169Event: document.getElementById("btn-copy-player-169-event"),
-    btnCopyPlayer916Event: document.getElementById("btn-copy-player-916-event"),
-    btnToolbarCopy169Event: document.getElementById("btn-toolbar-copy-169-event"),
-    btnToolbarCopy916Event: document.getElementById("btn-toolbar-copy-916-event"),
     btnTogglePublishSecret: document.getElementById("btn-toggle-publish-secret"),
-    remoteStatus: document.getElementById("remote-status"),
-    toolbarEventUrlStatus: document.getElementById("toolbar-event-url-status"),
+    jsonUrlInput: document.getElementById("json-url-input"),
+    btnLoadJsonUrl: document.getElementById("btn-load-json-url"),
   };
 
   /** @type {string | null} */
@@ -79,8 +77,41 @@
 
   let playAbort = null;
 
+  /** Publish endpoint from editor-config.json (in-memory after fetch). */
+  let editorPublishFunctionUrl = "";
+
   function sleep(ms) {
     return OH.sleep(ms);
+  }
+
+  /**
+   * Clipboard API often fails on http/file origins; fall back to execCommand.
+   * @param {string} text
+   * @returns {Promise<boolean>}
+   */
+  async function copyTextToClipboard(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {
+      /* fall through */
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch {
+      return false;
+    }
   }
 
   function setJsonStatus(message, kind) {
@@ -89,18 +120,18 @@
     if (kind) els.jsonStatus.classList.add(kind);
   }
 
-  function setRemoteStatus(message, kind) {
-    if (!els.remoteStatus) return;
-    els.remoteStatus.textContent = message || "";
-    els.remoteStatus.classList.remove("error", "ok");
-    if (kind) els.remoteStatus.classList.add(kind);
+  function setToolbarPublishStatus(message, kind) {
+    if (!els.toolbarPublishStatus) return;
+    els.toolbarPublishStatus.textContent = message || "";
+    els.toolbarPublishStatus.classList.remove("error", "ok");
+    if (kind) els.toolbarPublishStatus.classList.add(kind);
   }
 
-  function setToolbarEventUrlStatus(message, kind) {
-    if (!els.toolbarEventUrlStatus) return;
-    els.toolbarEventUrlStatus.textContent = message || "";
-    els.toolbarEventUrlStatus.classList.remove("error", "ok");
-    if (kind) els.toolbarEventUrlStatus.classList.add(kind);
+  function setLinksMenuStatus(message, kind) {
+    if (!els.linksMenuStatus) return;
+    els.linksMenuStatus.textContent = message || "";
+    els.linksMenuStatus.classList.remove("error", "ok");
+    if (kind) els.linksMenuStatus.classList.add(kind);
   }
 
   function validateEventSlug(s) {
@@ -113,8 +144,16 @@
       if (!raw) return [...DEFAULT_EVENT_PRESETS];
       const arr = JSON.parse(raw);
       if (!Array.isArray(arr)) return [...DEFAULT_EVENT_PRESETS];
-      const ok = arr.filter((x) => typeof x === "string" && validateEventSlug(x.trim()));
-      return ok.length ? [...new Set(ok)] : [...DEFAULT_EVENT_PRESETS];
+      const seen = new Set();
+      const out = [];
+      for (const x of arr) {
+        if (typeof x !== "string") continue;
+        const t = x.trim();
+        if (!validateEventSlug(t) || seen.has(t)) continue;
+        seen.add(t);
+        out.push(t);
+      }
+      return out.length ? out : [...DEFAULT_EVENT_PRESETS];
     } catch {
       return [...DEFAULT_EVENT_PRESETS];
     }
@@ -122,20 +161,25 @@
 
   function setRemoteEventList(list) {
     try {
-      const uniq = [...new Set(list.filter((x) => validateEventSlug(x)))];
-      localStorage.setItem(LS_REMOTE_EVENT_LIST, JSON.stringify(uniq));
+      const seen = new Set();
+      const out = [];
+      for (const x of list) {
+        if (!validateEventSlug(x) || seen.has(x)) continue;
+        seen.add(x);
+        out.push(x);
+        if (out.length >= 24) break;
+      }
+      localStorage.setItem(LS_REMOTE_EVENT_LIST, JSON.stringify(out));
     } catch {
       /* ignore */
     }
   }
 
+  /** Pin event to top of quick-pick (most recently used first). */
   function rememberRemoteEventCode(code) {
     if (!validateEventSlug(code)) return;
-    const list = getRemoteEventList();
-    if (!list.includes(code)) {
-      list.push(code);
-      setRemoteEventList(list);
-    }
+    const rest = getRemoteEventList().filter((x) => x !== code);
+    setRemoteEventList([code, ...rest]);
     populateRemoteEventSelect();
   }
 
@@ -162,21 +206,61 @@
     }
   }
 
+  function updateEditorConfigDisplay() {
+    const el = els.remoteEditorConfigUrl;
+    if (!el) return;
+    el.classList.remove("remote-editor-config-url--bad");
+    if (!editorPublishFunctionUrl) {
+      el.textContent =
+        "No publishFunctionUrl — add editor-config.json next to index.html (see editor-config.example.json).";
+      el.classList.add("remote-editor-config-url--bad");
+      return;
+    }
+    el.textContent = editorPublishFunctionUrl;
+  }
+
+  async function loadEditorConfig() {
+    editorPublishFunctionUrl = "";
+    try {
+      const res = await fetch(new URL("editor-config.json", window.location.href), { cache: "no-store" });
+      if (!res.ok) {
+        updateEditorConfigDisplay();
+        return;
+      }
+      const j = await res.json();
+      const url = typeof j.publishFunctionUrl === "string" ? j.publishFunctionUrl.trim() : "";
+      if (url) editorPublishFunctionUrl = url;
+    } catch {
+      /* file missing or invalid */
+    }
+    updateEditorConfigDisplay();
+  }
+
   function loadRemoteFields() {
     try {
       if (els.remoteEvent) els.remoteEvent.value = localStorage.getItem(LS_REMOTE_EVENT) || "";
-      if (els.remoteFunctionUrl) els.remoteFunctionUrl.value = localStorage.getItem(LS_REMOTE_FN) || "";
       if (els.remotePublishSecret) els.remotePublishSecret.value = localStorage.getItem(LS_REMOTE_SECRET) || "";
+      if (els.jsonUrlInput) els.jsonUrlInput.value = localStorage.getItem(LS_JSON_URL) || "";
     } catch {
       /* private mode */
     }
     populateRemoteEventSelect();
   }
 
+  /** Ensure stored event code appears in quick-pick and stays selected. */
+  function syncStoredEventIntoQuickPick() {
+    const t = els.remoteEvent ? els.remoteEvent.value.trim() : "";
+    if (validateEventSlug(t)) {
+      rememberRemoteEventCode(t);
+    } else {
+      populateRemoteEventSelect();
+    }
+  }
+
+  /** Persist event code and publish secret only (never the function URL). */
   function saveRemoteFields() {
     try {
       if (els.remoteEvent) localStorage.setItem(LS_REMOTE_EVENT, els.remoteEvent.value.trim());
-      if (els.remoteFunctionUrl) localStorage.setItem(LS_REMOTE_FN, els.remoteFunctionUrl.value.trim());
       if (els.remotePublishSecret) localStorage.setItem(LS_REMOTE_SECRET, els.remotePublishSecret.value);
     } catch {
       /* ignore */
@@ -337,31 +421,79 @@
     return { episodeHtml: epHtml, itemOrder: order };
   }
 
-  function applyJsonFromInput() {
-    const text = els.jsonInput.value.trim();
-    if (!text) {
-      setJsonStatus("Paste JSON first.", "error");
-      return;
+  /**
+   * @param {string} text
+   * @param {(msg: string, kind?: string) => void} [setStatus]
+   * @returns {boolean}
+   */
+  function applyJsonFromText(text, setStatus) {
+    const report = setStatus || setJsonStatus;
+    const t = (text || "").trim();
+    if (!t) {
+      report("Paste JSON first.", "error");
+      return false;
     }
     try {
-      const { episodeHtml: ep, itemOrder } = parseCreditsPayload(text);
+      const { episodeHtml: ep, itemOrder } = parseCreditsPayload(t);
       episodeHtml = ep;
       pages = itemOrder.length ? autoPaginateShared(itemOrder) : [[]];
       const n = itemOrder.length;
-      setJsonStatus(
+      report(
         `${n} credit block(s) · ${pages.length} page(s) · long roles split into ≤${PEOPLE_MAX_PER_GROUP} names per block; drag each block separately.`,
         "ok"
       );
       renderPageStrip();
       renderPlayoutEmpty();
+      return true;
     } catch (e) {
       itemsById = new Map();
       episodeHtml = null;
       pages = [[]];
-      setJsonStatus(e instanceof Error ? e.message : String(e), "error");
+      report(e instanceof Error ? e.message : String(e), "error");
       renderPageStrip();
       renderPlayoutEmpty();
+      return false;
     }
+  }
+
+  function applyJsonFromInput() {
+    applyJsonFromText(els.jsonInput.value, setJsonStatus);
+  }
+
+  async function loadCreditsJsonFromUrl() {
+    const url = els.jsonUrlInput ? els.jsonUrlInput.value.trim() : "";
+    if (!url) {
+      setJsonStatus("Enter a JSON URL.", "error");
+      return;
+    }
+    try {
+      localStorage.setItem(LS_JSON_URL, url);
+    } catch {
+      /* ignore */
+    }
+    let res;
+    try {
+      res = await fetch(url, { mode: "cors", cache: "no-store" });
+    } catch {
+      setJsonStatus(
+        "Could not fetch (network or CORS). Use a same-site URL or one that sends Access-Control-Allow-Origin for your site.",
+        "error"
+      );
+      return;
+    }
+    if (!res.ok) {
+      setJsonStatus(`Could not load JSON (HTTP ${res.status}).`, "error");
+      return;
+    }
+    let text;
+    try {
+      text = await res.text();
+    } catch {
+      setJsonStatus("Could not read response body.", "error");
+      return;
+    }
+    els.jsonInput.value = text;
+    applyJsonFromText(text, setJsonStatus);
   }
 
   function renderPlayoutEmpty() {
@@ -533,23 +665,16 @@
 
   function setPlayingUi(playing) {
     els.btnPlayBoth.disabled = playing;
-    els.btnPlay169.disabled = playing;
-    els.btnPlay916.disabled = playing;
     els.btnStop.disabled = !playing;
     els.btnPreview.disabled = playing;
     els.toggleJson.disabled = playing;
-    if (els.btnCopyPlayer169) els.btnCopyPlayer169.disabled = playing;
-    if (els.btnCopyPlayer916) els.btnCopyPlayer916.disabled = playing;
-    if (els.btnCopyPlayer169Json) els.btnCopyPlayer169Json.disabled = playing;
-    if (els.btnCopyPlayer916Json) els.btnCopyPlayer916Json.disabled = playing;
     if (els.btnExportDesignJson) els.btnExportDesignJson.disabled = playing;
     if (els.toggleRemote) els.toggleRemote.disabled = playing;
-    if (els.btnRemotePublish) els.btnRemotePublish.disabled = playing;
-    if (els.btnCopyPlayer169Event) els.btnCopyPlayer169Event.disabled = playing;
-    if (els.btnCopyPlayer916Event) els.btnCopyPlayer916Event.disabled = playing;
-    if (els.btnToolbarCopy169Event) els.btnToolbarCopy169Event.disabled = playing;
-    if (els.btnToolbarCopy916Event) els.btnToolbarCopy916Event.disabled = playing;
+    if (els.btnPublishCredits) els.btnPublishCredits.disabled = playing;
+    if (els.btnMenuLinks) els.btnMenuLinks.disabled = playing;
     if (els.btnTogglePublishSecret) els.btnTogglePublishSecret.disabled = playing;
+    if (els.btnReloadEditorConfig) els.btnReloadEditorConfig.disabled = playing;
+    if (els.btnLoadJsonUrl) els.btnLoadJsonUrl.disabled = playing;
   }
 
   function designStateForShare() {
@@ -575,32 +700,37 @@
     return u.href;
   }
 
-  async function copyPlayerLink(viewParam, label) {
+  /**
+   * @param {(msg: string, kind?: string) => void} report
+   */
+  async function copyPlayerLink(viewParam, label, report) {
+    const r = report || setJsonStatus;
     if (itemsById.size === 0 && !episodeHtml) {
-      setJsonStatus("Apply JSON and arrange pages before copying a player link.", "error");
+      r("Apply JSON and arrange pages before copying a player link.", "error");
       return;
     }
-    try {
-      await navigator.clipboard.writeText(playerUrlForView(viewParam));
-      setJsonStatus(`Copied ${label} player link (full layout is in the URL; very long casts may hit browser limits).`, "ok");
-    } catch {
-      setJsonStatus("Could not copy — try another browser or paste from devtools.", "error");
+    const ok = await copyTextToClipboard(playerUrlForView(viewParam));
+    if (ok) {
+      r(`Copied ${label} link (full layout in URL; may be very long).`, "ok");
+    } else {
+      r("Copy failed — try HTTPS/localhost or copy the URL manually.", "error");
     }
   }
 
-  async function copyPlayerFileLink(viewParam, label) {
+  /**
+   * @param {(msg: string, kind?: string) => void} report
+   */
+  async function copyPlayerFileLink(viewParam, label, report) {
+    const r = report || setJsonStatus;
     if (itemsById.size === 0 && !episodeHtml) {
-      setJsonStatus("Apply JSON and arrange pages before copying a player link.", "error");
+      r("Apply JSON and arrange pages before copying a player link.", "error");
       return;
     }
-    try {
-      await navigator.clipboard.writeText(playerUrlForJsonFile(viewParam));
-      setJsonStatus(
-        `Copied ${label} player URL using ${EXPORT_DESIGN_FILENAME} — save that file next to player.html and commit.`,
-        "ok"
-      );
-    } catch {
-      setJsonStatus("Could not copy — try another browser or paste from devtools.", "error");
+    const ok = await copyTextToClipboard(playerUrlForJsonFile(viewParam));
+    if (ok) {
+      r(`Copied ${label} URL (${EXPORT_DESIGN_FILENAME} next to player.html).`, "ok");
+    } else {
+      r("Copy failed — try HTTPS/localhost or copy manually.", "error");
     }
   }
 
@@ -689,30 +819,34 @@
 
   async function publishRemote() {
     if (itemsById.size === 0 && !episodeHtml) {
-      setRemoteStatus("Apply JSON and arrange pages before publishing.", "error");
+      setToolbarPublishStatus("Apply JSON and arrange pages before publishing.", "error");
       return;
     }
     const code = els.remoteEvent ? els.remoteEvent.value.trim() : "";
-    const fnRaw = els.remoteFunctionUrl ? els.remoteFunctionUrl.value.trim() : "";
     const sec = els.remotePublishSecret ? els.remotePublishSecret.value.trim() : "";
     if (!validateEventSlug(code)) {
-      setRemoteStatus("Event code: 1–64 chars — letters, numbers, hyphens, underscores only.", "error");
+      setToolbarPublishStatus("Event code: 1–64 chars — letters, numbers, hyphens, underscores.", "error");
       return;
     }
-    if (!fnRaw || !sec) {
-      setRemoteStatus("Publish function URL and publish secret are required.", "error");
+    if (!editorPublishFunctionUrl) {
+      await loadEditorConfig();
+    }
+    const fnRaw = editorPublishFunctionUrl;
+    if (!fnRaw) {
+      setToolbarPublishStatus("Missing publishFunctionUrl in editor-config.json.", "error");
+      return;
+    }
+    if (!sec) {
+      setToolbarPublishStatus("Enter publish secret (Cloud settings) — saved only in this browser.", "error");
       return;
     }
 
     const resolved = resolvePublishFunctionUrl(fnRaw);
     if (!resolved.url) {
-      setRemoteStatus(resolved.hint || "Invalid publish function URL.", "error");
+      setToolbarPublishStatus(resolved.hint || "Invalid publishFunctionUrl in editor-config.json.", "error");
       return;
     }
     const fn = resolved.url;
-    if (resolved.hint && els.remoteFunctionUrl) {
-      els.remoteFunctionUrl.value = fn;
-    }
 
     saveRemoteFields();
 
@@ -731,8 +865,8 @@
       });
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
-      setRemoteStatus(
-        `Request failed (${detail}). Confirm the Edge Function is deployed and the URL ends with /functions/v1/publish-credits. Open the browser devtools Network tab for details.`,
+      setToolbarPublishStatus(
+        `Request failed (${detail}). Check Edge Function URL and deployment; see Network tab.`,
         "error"
       );
       return;
@@ -745,13 +879,13 @@
     }
     if (!res.ok) {
       const err = data && data.error ? String(data.error) : res.statusText;
-      setRemoteStatus(`Publish failed: ${err}`, "error");
+      setToolbarPublishStatus(`Publish failed: ${err}`, "error");
       return;
     }
     rememberRemoteEventCode(code);
     const autoFixNote = resolved.hint ? `${resolved.hint} ` : "";
-    setRemoteStatus(
-      `${autoFixNote}Published as “${code}”. Ensure player-config.json is on your site so ?event= links resolve.`,
+    setToolbarPublishStatus(
+      `${autoFixNote}Published “${code}”. player-config.json must be on your site for ?event links.`,
       "ok"
     );
   }
@@ -762,20 +896,20 @@
    * @param {(msg: string, kind?: string) => void} [reportStatus]
    */
   async function copyPlayerEventUrl(viewParam, label, reportStatus) {
-    const report = typeof reportStatus === "function" ? reportStatus : setRemoteStatus;
+    const report = typeof reportStatus === "function" ? reportStatus : setJsonStatus;
     const code = els.remoteEvent ? els.remoteEvent.value.trim() : "";
     if (!validateEventSlug(code)) {
-      report("Set a valid event code (Cloud events → Event code, e.g. OfficeHours).", "error");
+      report("Set a valid event code under Cloud settings (e.g. OfficeHours).", "error");
       return;
     }
     const u = new URL("player.html", window.location.href);
     u.searchParams.set("view", viewParam);
     u.searchParams.set("event", code);
-    try {
-      await navigator.clipboard.writeText(u.href);
+    const ok = await copyTextToClipboard(u.href);
+    if (ok) {
       report(`Copied ${label} player URL (?event=${code}).`, "ok");
-    } catch {
-      report("Could not copy to clipboard.", "error");
+    } else {
+      report("Copy failed — try HTTPS/localhost.", "error");
     }
   }
 
@@ -795,25 +929,6 @@
         OH.runPlayoutOnElement(els.slide169, s169, ac),
         OH.runPlayoutOnElement(els.slide916, s916, ac),
       ]);
-    } finally {
-      setPlayingUi(false);
-      playAbort = null;
-    }
-  }
-
-  async function runPlayout(aspect) {
-    const slides = buildSlidesForAspect(aspect);
-    if (slides.length === 0) {
-      setJsonStatus("Load JSON before play.", "error");
-      return;
-    }
-
-    const el = aspect === "169" ? els.slide169 : els.slide916;
-    const ac = new AbortController();
-    playAbort = ac;
-    setPlayingUi(true);
-    try {
-      await OH.runPlayoutOnElement(el, slides, ac);
     } finally {
       setPlayingUi(false);
       playAbort = null;
@@ -969,34 +1084,101 @@
       els.remotePanel.hidden = !isHidden;
       els.remotePanel.classList.toggle("hidden", !isHidden);
       els.toggleRemote.setAttribute("aria-expanded", String(isHidden));
-      if (isHidden) loadRemoteFields();
+      if (isHidden) {
+        loadRemoteFields();
+        void loadEditorConfig();
+      }
     });
   }
 
-  if (els.btnRemotePublish) {
-    els.btnRemotePublish.addEventListener("click", () => {
+  if (els.btnReloadEditorConfig) {
+    els.btnReloadEditorConfig.addEventListener("click", () => {
+      void loadEditorConfig();
+    });
+  }
+
+  if (els.remotePublishSecret) {
+    els.remotePublishSecret.addEventListener("blur", () => {
+      saveRemoteFields();
+    });
+  }
+  if (els.remoteEvent) {
+    els.remoteEvent.addEventListener("blur", () => {
+      saveRemoteFields();
+      const t = els.remoteEvent.value.trim();
+      if (validateEventSlug(t)) rememberRemoteEventCode(t);
+    });
+  }
+
+  if (els.btnPublishCredits) {
+    els.btnPublishCredits.addEventListener("click", () => {
       void publishRemote();
     });
   }
-  if (els.btnCopyPlayer169Event) {
-    els.btnCopyPlayer169Event.addEventListener("click", () => {
-      void copyPlayerEventUrl("16x9", "16:9", setRemoteStatus);
+
+  function closeLinksMenu() {
+    if (!els.panelMenuLinks || !els.btnMenuLinks) return;
+    els.panelMenuLinks.hidden = true;
+    els.panelMenuLinks.classList.add("hidden");
+    els.btnMenuLinks.setAttribute("aria-expanded", "false");
+  }
+
+  function openLinksMenu() {
+    if (!els.panelMenuLinks || !els.btnMenuLinks) return;
+    els.panelMenuLinks.hidden = false;
+    els.panelMenuLinks.classList.remove("hidden");
+    els.btnMenuLinks.setAttribute("aria-expanded", "true");
+    setLinksMenuStatus("", "");
+  }
+
+  if (els.btnMenuLinks && els.panelMenuLinks) {
+    els.btnMenuLinks.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = !els.panelMenuLinks.hidden;
+      if (open) closeLinksMenu();
+      else openLinksMenu();
+    });
+
+    els.panelMenuLinks.addEventListener("click", (e) => {
+      const item = e.target.closest("[data-links-action]");
+      if (!item) return;
+      const action = item.getAttribute("data-links-action");
+      void (async () => {
+        switch (action) {
+          case "event-169":
+            await copyPlayerEventUrl("16x9", "16:9", setLinksMenuStatus);
+            break;
+          case "event-916":
+            await copyPlayerEventUrl("9x16", "9:16", setLinksMenuStatus);
+            break;
+          case "json-169":
+            await copyPlayerFileLink("16x9", "16:9", setLinksMenuStatus);
+            break;
+          case "json-916":
+            await copyPlayerFileLink("9x16", "9:16", setLinksMenuStatus);
+            break;
+          case "hash-169":
+            await copyPlayerLink("16x9", "16:9", setLinksMenuStatus);
+            break;
+          case "hash-916":
+            await copyPlayerLink("9x16", "9:16", setLinksMenuStatus);
+            break;
+          default:
+            break;
+        }
+        closeLinksMenu();
+      })();
     });
   }
-  if (els.btnCopyPlayer916Event) {
-    els.btnCopyPlayer916Event.addEventListener("click", () => {
-      void copyPlayerEventUrl("9x16", "9:16", setRemoteStatus);
-    });
-  }
-  if (els.btnToolbarCopy169Event) {
-    els.btnToolbarCopy169Event.addEventListener("click", () => {
-      void copyPlayerEventUrl("16x9", "16:9", setToolbarEventUrlStatus);
-    });
-  }
-  if (els.btnToolbarCopy916Event) {
-    els.btnToolbarCopy916Event.addEventListener("click", () => {
-      void copyPlayerEventUrl("9x16", "9:16", setToolbarEventUrlStatus);
-    });
+
+  document.addEventListener("click", () => {
+    closeLinksMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeLinksMenu();
+  });
+  if (els.linksDropdown) {
+    els.linksDropdown.addEventListener("click", (e) => e.stopPropagation());
   }
 
   if (els.btnTogglePublishSecret && els.remotePublishSecret) {
@@ -1014,7 +1196,7 @@
       if (v && els.remoteEvent) {
         els.remoteEvent.value = v;
         saveRemoteFields();
-        populateRemoteEventSelect();
+        rememberRemoteEventCode(v);
       }
     });
   }
@@ -1036,42 +1218,29 @@
     void runPlayoutBoth();
   });
 
-  els.btnPlay169.addEventListener("click", () => {
-    void runPlayout("169");
-  });
-
-  els.btnPlay916.addEventListener("click", () => {
-    void runPlayout("916");
-  });
-
   els.btnStop.addEventListener("click", stopPlayout);
 
   els.btnAddPage.addEventListener("click", addEmptyPage);
-
-  if (els.btnCopyPlayer169) {
-    els.btnCopyPlayer169.addEventListener("click", () => {
-      void copyPlayerLink("16x9", "16:9");
-    });
-  }
-  if (els.btnCopyPlayer916) {
-    els.btnCopyPlayer916.addEventListener("click", () => {
-      void copyPlayerLink("9x16", "9:16");
-    });
-  }
 
   if (els.btnExportDesignJson) {
     els.btnExportDesignJson.addEventListener("click", () => {
       void exportDesignJson();
     });
   }
-  if (els.btnCopyPlayer169Json) {
-    els.btnCopyPlayer169Json.addEventListener("click", () => {
-      void copyPlayerFileLink("16x9", "16:9");
+
+  if (els.btnLoadJsonUrl) {
+    els.btnLoadJsonUrl.addEventListener("click", () => {
+      void loadCreditsJsonFromUrl();
     });
   }
-  if (els.btnCopyPlayer916Json) {
-    els.btnCopyPlayer916Json.addEventListener("click", () => {
-      void copyPlayerFileLink("9x16", "9:16");
+  if (els.jsonUrlInput) {
+    els.jsonUrlInput.addEventListener("blur", () => {
+      try {
+        const u = els.jsonUrlInput.value.trim();
+        if (u) localStorage.setItem(LS_JSON_URL, u);
+      } catch {
+        /* ignore */
+      }
     });
   }
 
@@ -1106,8 +1275,17 @@
 
   applyViewFromQuery();
 
-  loadRemoteFields();
+  try {
+    localStorage.removeItem(LS_REMOTE_FN_LEGACY);
+  } catch {
+    /* ignore */
+  }
 
-  renderPlayoutEmpty();
-  renderPageStrip();
+  void (async function boot() {
+    await loadEditorConfig();
+    loadRemoteFields();
+    syncStoredEventIntoQuickPick();
+    renderPlayoutEmpty();
+    renderPageStrip();
+  })();
 })();

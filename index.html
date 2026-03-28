@@ -15,52 +15,97 @@
   <body>
     <div class="app">
       <header class="toolbar">
-        <div class="toolbar-row">
-          <button type="button" id="btn-toggle-json" class="btn primary" aria-expanded="false">
-            Paste credits JSON
-          </button>
+        <div class="toolbar-row toolbar-row--primary">
+          <button type="button" id="btn-publish-credits" class="btn primary">Publish credits</button>
+          <span id="toolbar-publish-status" class="json-status toolbar-inline-status" role="status"></span>
+
+          <div class="dropdown" id="links-dropdown">
+            <button
+              type="button"
+              id="btn-menu-links"
+              class="btn"
+              aria-expanded="false"
+              aria-haspopup="true"
+              aria-controls="panel-menu-links"
+            >
+              Links ▾
+            </button>
+            <div
+              id="panel-menu-links"
+              class="dropdown-panel hidden"
+              role="menu"
+              hidden
+              aria-label="Copy player links"
+            >
+              <div class="dropdown-panel-title">Cloud (?event)</div>
+              <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="event-169">
+                Copy 16:9 player URL
+              </button>
+              <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="event-916">
+                Copy 9:16 player URL
+              </button>
+              <div class="dropdown-panel-title">Same site (JSON file)</div>
+              <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="json-169">
+                Copy 16:9 URL (ohcredits-design.json)
+              </button>
+              <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="json-916">
+                Copy 9:16 URL (ohcredits-design.json)
+              </button>
+              <div class="dropdown-panel-title">Embedded in URL</div>
+              <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="hash-169">
+                Copy 16:9 link (full layout in URL)
+              </button>
+              <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="hash-916">
+                Copy 9:16 link (full layout in URL)
+              </button>
+              <p id="links-menu-status" class="dropdown-menu-status" role="status"></p>
+            </div>
+          </div>
+
           <button type="button" id="btn-toggle-remote" class="btn" aria-expanded="false">
-            Cloud events
+            Cloud settings
+          </button>
+          <button type="button" id="btn-toggle-json" class="btn" aria-expanded="false">
+            Paste credits JSON
           </button>
           <button type="button" id="btn-preview" class="btn">Preview first slide</button>
           <button type="button" id="btn-play-both" class="btn primary">Play both</button>
-          <button type="button" id="btn-play-169" class="btn">Play 16:9 only</button>
-          <button type="button" id="btn-play-916" class="btn">Play 9:16 only</button>
           <button type="button" id="btn-stop" class="btn" disabled>Stop</button>
-          <button type="button" id="btn-export-design-json" class="btn primary">Save design JSON</button>
-          <button type="button" id="btn-copy-player-169-json" class="btn">Copy 16:9 URL (JSON file)</button>
-          <button type="button" id="btn-copy-player-916-json" class="btn">Copy 9:16 URL (JSON file)</button>
-          <button type="button" id="btn-copy-player-169" class="btn">Copy 16:9 link (in URL)</button>
-          <button type="button" id="btn-copy-player-916" class="btn">Copy 9:16 link (in URL)</button>
+          <button type="button" id="btn-export-design-json" class="btn">Save design JSON</button>
         </div>
-        <div class="toolbar-row toolbar-event-urls" aria-label="Copy cloud player URLs">
-          <span class="toolbar-event-urls-label">Cloud player (?event)</span>
-          <button type="button" id="btn-toolbar-copy-169-event" class="btn">
-            Copy 16:9 player URL
-          </button>
-          <button type="button" id="btn-toolbar-copy-916-event" class="btn">
-            Copy 9:16 player URL
-          </button>
-          <span id="toolbar-event-url-status" class="json-status" role="status"></span>
-        </div>
+
         <div id="json-panel" class="json-panel hidden" hidden>
-          <label for="json-input" class="json-label"
-            >Paste JSON (episode + credits with role / people)</label
-          >
+          <label class="json-label" for="json-url-input">Role / credits JSON URL</label>
+          <p class="json-url-hint">
+            Fetch credits JSON from a URL (same site or CORS-enabled). Loaded text replaces the box below and runs the same steps as <strong>Apply JSON</strong>.
+          </p>
+          <div class="json-url-row">
+            <input
+              id="json-url-input"
+              type="url"
+              class="json-url-input"
+              placeholder="https://example.com/credits.json"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="button" id="btn-load-json-url" class="btn">Load from URL</button>
+          </div>
+          <label for="json-input" class="json-label">Or paste JSON (episode + credits with role / people)</label>
           <textarea id="json-input" rows="12" spellcheck="false" placeholder='{"episode":{...},"credits":[...]}'></textarea>
           <div class="json-actions">
             <button type="button" id="btn-apply-json" class="btn primary">Apply JSON</button>
             <span id="json-status" class="json-status" role="status"></span>
           </div>
         </div>
+
         <div id="remote-panel" class="json-panel remote-panel hidden" hidden>
           <p class="remote-panel-intro">
-            Publish to <strong>Supabase</strong> so <code>player.html?event=YourCode</code> loads this layout. The <strong>event</strong> picks which row is updated in the database; the <strong>publish secret</strong> proves you’re allowed to write (same value as <code>PUBLISH_SECRET</code> on your Edge Function—not your DB password). The public player only uses the anon key in <code>player-config.json</code>. Full setup: <code>CLOUD_SETUP.txt</code>.
+            Event and publish secret for <strong>Publish credits</strong>. The function URL is in <code>editor-config.json</code>. The public player uses <code>player-config.json</code>. See <code>CLOUD_SETUP.txt</code>.
           </p>
           <div class="remote-fields">
             <label class="json-label" for="remote-event-preset">Event (quick pick)</label>
             <p class="remote-field-hint">
-              Choose a saved show id or type your own below. This exact text is used in links as <code>?event=…</code> (e.g. <code>OfficeHours</code>).
+              Last-used event is restored from this browser. Pick a saved id or type below — used as <code>?event=…</code>.
             </p>
             <select id="remote-event-preset" class="remote-input remote-input--wide" aria-label="Pick saved event code">
               <option value="">— Saved events —</option>
@@ -75,31 +120,27 @@
               autocomplete="off"
               spellcheck="false"
             />
-            <label class="json-label" for="remote-function-url">Publish function URL</label>
+            <label class="json-label">Publish function URL</label>
             <p class="remote-field-hint">
-              <strong>Not</strong> the “Project URL” / API URL from Settings → API alone. Use the
-              <strong>Edge Function invoke URL</strong>: <code>https://YOUR_REF.supabase.co/functions/v1/publish-credits</code>
-              (Dashboard → Edge Functions → <code>publish-credits</code> → copy URL). If you only paste the project root, we will try to add <code>/functions/v1/publish-credits</code> for you.
+              From <code>editor-config.json</code> (<code>publishFunctionUrl</code>). See <code>editor-config.example.json</code>.
             </p>
-            <input
-              id="remote-function-url"
-              type="url"
-              class="remote-input remote-input--wide"
-              placeholder="https://YOUR_REF.supabase.co/functions/v1/publish-credits"
-              autocomplete="off"
-              spellcheck="false"
-            />
+            <p id="remote-editor-config-url" class="remote-editor-config-url" aria-live="polite">
+              Loading editor-config.json…
+            </p>
+            <button type="button" id="btn-reload-editor-config" class="btn btn-reload-editor-config">
+              Reload editor-config.json
+            </button>
             <label class="json-label" for="remote-publish-secret">Publish secret</label>
             <p class="remote-field-hint" id="remote-secret-hint">
-              The bearer token for your <code>publish-credits</code> function (Dashboard → Edge Functions → Secrets → <code>PUBLISH_SECRET</code>). Not the database password and not the anon API key.
+              Same as Edge Function secret <code>PUBLISH_SECRET</code>. Saved only in <strong>localStorage</strong> on this device.
             </p>
             <div class="remote-secret-row">
               <input
                 id="remote-publish-secret"
                 type="password"
                 class="remote-input remote-input--secret"
-                placeholder="Your PUBLISH_SECRET value"
-                autocomplete="off"
+                placeholder="PUBLISH_SECRET (this browser only)"
+                autocomplete="new-password"
                 spellcheck="false"
                 aria-describedby="remote-secret-hint"
               />
@@ -113,24 +154,6 @@
                 Show
               </button>
             </div>
-          </div>
-          <div class="remote-player-links">
-            <h3 class="remote-player-links-title">Copy player URLs</h3>
-            <p class="remote-field-hint">
-              Uses the <strong>event code</strong> above. Copies <code>player.html?view=…&amp;event=…</code> for third parties (Supabase + <code>player-config.json</code> on your site).
-            </p>
-            <div class="remote-player-links-buttons">
-              <button type="button" id="btn-copy-player-169-event" class="btn primary">
-                Copy 16:9 player URL
-              </button>
-              <button type="button" id="btn-copy-player-916-event" class="btn primary">
-                Copy 9:16 player URL
-              </button>
-            </div>
-          </div>
-          <div class="json-actions remote-actions">
-            <button type="button" id="btn-remote-publish" class="btn primary">Publish design</button>
-            <span id="remote-status" class="json-status" role="status"></span>
           </div>
         </div>
       </header>
@@ -167,8 +190,7 @@
         <section class="layout-section" aria-labelledby="heading-pages">
           <h2 id="heading-pages" class="workspace-heading">Pages</h2>
           <p class="layout-hint">
-            One order for both formats — drag roles and optional title/date between boxes. Add a blank page first to fade from black into title or credits. Estimates compare 16:9 and 9:16 height budgets.
-            <strong>Save design JSON</strong> writes <code>ohcredits-design.json</code> (choose your repo folder in the save dialog, or move the download there) and commit it beside <code>player.html</code>. Use <strong>Copy … URL (JSON file)</strong> for short same-site links. <strong>Cloud events</strong> + Supabase gives <code>?event=…</code> links for third parties without huge URLs. <strong>Copy … link (in URL)</strong> embeds the full layout when you cannot use a file or database.
+            One order for both formats — drag roles and optional title/date between boxes. Use <strong>Publish credits</strong> for Supabase, <strong>Links</strong> to copy player URLs, <strong>Cloud settings</strong> for event and secret, and <strong>Paste credits JSON</strong> or a JSON URL to load roles.
           </p>
           <div id="episode-tray-host" class="episode-tray-host"></div>
           <div id="page-strip" class="page-strip page-strip--shared"></div>
