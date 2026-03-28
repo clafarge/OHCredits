@@ -367,9 +367,12 @@ body {
   overflow: hidden;
 }
 
-/* Shared organizer: 16:9 mini frame, 17px type (matches 16:9 playout) */
+/*
+ * Shared organizer: 16:9 mini frame at ~real type size (~17px).
+ * Width chosen so inner height ≈ BUDGET_PX["169"] in app.js (~225px) for scale parity.
+ */
 .page-box--organizer {
-  width: 280px;
+  width: 440px;
 }
 
 .page-box-header {
@@ -439,8 +442,8 @@ body {
 
 .credit-draggable {
   cursor: grab;
-  margin-bottom: 15px;
-  padding: 6px 4px;
+  margin-bottom: 12px;
+  padding: 4px 4px;
   border-radius: 6px;
   border: 1px solid transparent;
   transition: border-color 0.15s, background 0.15s;

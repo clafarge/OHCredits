@@ -4,15 +4,20 @@
   const DISPLAY_MS = 5000;
   const FADE_MS = 500;
 
-  /** Inner content budgets (px) — tuned to match page box / playout viewports */
-  const BUDGET_PX = { "169": 118, "916": 312 };
+  /**
+   * Usable vertical space (px) per page at playout scale — tuned so ~3 simple credits
+   * (role + one short name each) fit comfortably in both formats; 9:16 gets more room
+   * because the portrait frame is taller. Organizer box height is aligned to 16:9 budget.
+   */
+  const BUDGET_PX = { "169": 225, "916": 410 };
 
   /** Chars per line heuristic for wrapped name lines in narrow vs wide boxes */
-  const CPL = { "169": 40, "916": 18 };
+  const CPL = { "169": 44, "916": 20 };
 
-  const LINE_PX = 24;
-  const ROLE_BLOCK_PX = 22;
-  const BLOCK_GAP_PX = 21;
+  /** Per-credit stack: role + names + gap below block (matches real CSS ~17px/15px type) */
+  const LINE_PX = 22;
+  const ROLE_BLOCK_PX = 20;
+  const BLOCK_GAP_PX = 14;
 
   const els = {
     toggleJson: document.getElementById("btn-toggle-json"),
