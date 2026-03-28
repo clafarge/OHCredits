@@ -21,6 +21,39 @@
   const DEFAULT_EVENT_PRESETS = ["OfficeHours"];
 
   /**
+   * First-load credits template. `_designerPageHint: "starter-v1"` enables page rules:
+   * Host + Reader share page 1; next short roles ~3 per page; remaining rows (heavy lists)
+   * are budget-paginated; the last credit row stays on its own final page.
+   */
+  const DEFAULT_CREDITS_JSON = `{
+  "_designerPageHint": "starter-v1",
+  "episode": {
+    "title": "Your show title",
+    "date": "Episode date"
+  },
+  "credits": [
+    { "role": "Host", "people": ["Name"] },
+    { "role": "Reader", "people": ["Name"] },
+    { "role": "Executive producer", "people": ["Name"] },
+    { "role": "Producer", "people": ["Name"] },
+    { "role": "Director", "people": ["Name"] },
+    { "role": "Senior producer", "people": ["Name"] },
+    { "role": "Line producer", "people": ["Name"] },
+    { "role": "Editor", "people": ["Name"] },
+    {
+      "role": "Contributors",
+      "people": [
+        "Add many names here — this block is placed toward the end",
+        "Alex Kim", "Jordan Lee", "Sam Rivera", "Taylor Chen", "Riley Patel",
+        "Casey Wu", "Morgan Diaz", "Jamie Ortiz", "Quinn Brooks", "Avery Ng",
+        "Blake Fox", "Cameron Shah", "Drew Cole", "Emery Park", "Finley Gray"
+      ]
+    },
+    { "role": "Special thanks", "people": ["Community", "Sponsors", "Volunteers"] }
+  ]
+}`;
+
+  /**
    * Usable vertical space (px) per page at playout scale — tuned so ~3 simple credits
    * (role + one short name each) fit comfortably in both formats; 9:16 gets more room
    * because the portrait frame is taller. Organizer box height is aligned to 16:9 budget.
@@ -354,6 +387,69 @@
   }
 
   /**
+   * Group flat block ids (c-0-0, c-2-g1, …) into consecutive runs per credits[] row index.
+   * @param {string[]} orderedIds
+   * @returns {{ row: number, ids: string[] }[]}
+   */
+  function groupItemOrderByCreditRow(orderedIds) {
+    /** @type {{ row: number, ids: string[] }[]} */
+    const runs = [];
+    for (const id of orderedIds) {
+      const m = /^c-(\d+)-/.exec(id);
+      const row = m ? parseInt(m[1], 10) : -1;
+      const last = runs[runs.length - 1];
+      if (last && last.row === row) last.ids.push(id);
+      else runs.push({ row, ids: [id] });
+    }
+    return runs;
+  }
+
+  /**
+   * Page layout for `_designerPageHint: "starter-v1"`: Host + Reader together, then 3 roles per
+   * page for two pages, then height-based pages for middle/heavy rows, last row on its own page.
+   * @param {string[]} itemOrder
+   * @returns {string[][]}
+   */
+  function paginateStarterLayout(itemOrder) {
+    const runs = groupItemOrderByCreditRow(itemOrder);
+    if (runs.length === 0) return [[]];
+
+    const pages = [];
+    let idx = 0;
+
+    function takeRunCount(count) {
+      const ids = [];
+      for (let k = 0; k < count && idx < runs.length; k++) {
+        ids.push(...runs[idx++].ids);
+      }
+      return ids;
+    }
+
+    const p1 = takeRunCount(2);
+    if (p1.length) pages.push(p1);
+
+    for (let slab = 0; slab < 2; slab++) {
+      if (idx >= runs.length - 1) break;
+      const slabIds = takeRunCount(3);
+      if (slabIds.length) pages.push(slabIds);
+    }
+
+    const middleIds = [];
+    while (idx < runs.length - 1) {
+      middleIds.push(...runs[idx++].ids);
+    }
+    if (middleIds.length) {
+      pages.push(...autoPaginateShared(middleIds));
+    }
+
+    if (idx < runs.length) {
+      pages.push([...runs[idx].ids]);
+    }
+
+    return pages.length ? pages : [[]];
+  }
+
+  /**
    * Keep empty pages (e.g. trailing blanks). Collapse to a single [[]] only when no page has any roles.
    * @param {string[][]} p
    */
@@ -446,7 +542,9 @@
     }
 
     if (order.length === 0 && !epHtml) throw new Error("No credits or episode content");
-    return { episodeHtml: epHtml, itemOrder: order };
+    const designerPageHint =
+      typeof data._designerPageHint === "string" ? data._designerPageHint.trim() : "";
+    return { episodeHtml: epHtml, itemOrder: order, designerPageHint };
   }
 
   /**
@@ -462,12 +560,20 @@
       return false;
     }
     try {
-      const { episodeHtml: ep, itemOrder } = parseCreditsPayload(t);
+      const { episodeHtml: ep, itemOrder, designerPageHint } = parseCreditsPayload(t);
       episodeHtml = ep;
-      pages = itemOrder.length ? autoPaginateShared(itemOrder) : [[]];
+      if (itemOrder.length && designerPageHint === "starter-v1") {
+        pages = paginateStarterLayout(itemOrder);
+      } else {
+        pages = itemOrder.length ? autoPaginateShared(itemOrder) : [[]];
+      }
       const n = itemOrder.length;
+      const layoutNote =
+        designerPageHint === "starter-v1"
+          ? " Starter page layout (Host+Reader, ~3 roles/page, heavy lists then thanks)."
+          : "";
       report(
-        `${n} credit block(s) · ${pages.length} page(s) · long roles split into ≤${PEOPLE_MAX_PER_GROUP} names per block; drag each block separately.`,
+        `${n} credit block(s) · ${pages.length} page(s) · long roles split into ≤${PEOPLE_MAX_PER_GROUP} names per block; drag each block separately.${layoutNote}`,
         "ok"
       );
       renderPageStrip();
@@ -585,6 +691,25 @@
     renderPageStrip();
   }
 
+  /**
+   * Move a page to a new index (insert before `toIndex` in the pre-move list).
+   * @param {number} fromIndex
+   * @param {number} toIndex
+   */
+  function movePageBefore(fromIndex, toIndex) {
+    if (fromIndex === toIndex) return;
+    if (fromIndex < 0 || fromIndex >= pages.length) return;
+    /* toIndex === pages.length means “append as last page”. */
+    if (toIndex < 0 || toIndex > pages.length) return;
+    const block = pages[fromIndex];
+    pages.splice(fromIndex, 1);
+    let insertAt = toIndex;
+    if (fromIndex < toIndex) insertAt = toIndex - 1;
+    pages.splice(insertAt, 0, block);
+    pages = normalizePages(pages);
+    renderPageStrip();
+  }
+
   function buildPageBoxHtml(pageIndex, ids, pageCount) {
     let est169 = 0;
     let est916 = 0;
@@ -628,11 +753,20 @@
       : "";
 
     const fitKey = metaClass.replace("page-box-meta--", "");
+    const dragHandle =
+      pageCount > 1
+        ? `<button type="button" class="page-box-drag-handle" draggable="true" data-page-drag-index="${pageIndex}" aria-label="Drag to reorder page" title="Drag page onto another page to change order">
+            <span class="page-box-drag-glyph" aria-hidden="true"></span>
+          </button>`
+        : "";
     return `
       <div class="page-box page-box--organizer" data-page="${pageIndex}">
         ${removeBtn}
         <div class="page-box-header">
-          <span class="page-box-title">Page ${pageIndex + 1}</span>
+          <div class="page-box-header-row">
+            ${dragHandle}
+            <span class="page-box-title">Page ${pageIndex + 1}</span>
+          </div>
           <span class="page-box-meta ${metaClass}" data-estimate="${OH.escapeHtml(metaText)}" data-fit="${fitKey}" title="Estimated content height vs usable height for each format">${metaText}</span>
         </div>
         <div class="page-box-viewport" data-drop-page="${pageIndex}">
@@ -641,6 +775,13 @@
         <div class="page-box-drop-zone" data-page="${pageIndex}">Drop at end of page</div>
       </div>
     `;
+  }
+
+  /** Drop zone to move a page to the end (drop-on-last only inserts before last). */
+  function pageStripEndDropHtml() {
+    return pages.length > 1
+      ? `<div class="page-strip-end-drop" data-page-reorder-end="1" title="Drop here to make this page last" aria-label="Drop page to move to end">Last</div>`
+      : "";
   }
 
   function renderPageStrip() {
@@ -653,12 +794,14 @@
     }
 
     if (itemsById.size === 0 && episodeHtml) {
-      els.pageStrip.innerHTML = pages.map((ids, i) => buildPageBoxHtml(i, ids, pages.length)).join("");
+      els.pageStrip.innerHTML =
+        pages.map((ids, i) => buildPageBoxHtml(i, ids, pages.length)).join("") + pageStripEndDropHtml();
       requestAnimationFrame(() => measurePageOverflow(els.pageStrip));
       return;
     }
 
-    els.pageStrip.innerHTML = pages.map((ids, i) => buildPageBoxHtml(i, ids, pages.length)).join("");
+    els.pageStrip.innerHTML =
+      pages.map((ids, i) => buildPageBoxHtml(i, ids, pages.length)).join("") + pageStripEndDropHtml();
 
     requestAnimationFrame(() => {
       measurePageOverflow(els.pageStrip);
@@ -1000,9 +1143,39 @@
     }
   }
 
+  /** @param {DragEvent} e */
+  function dragPagePayload(e) {
+    let raw = e.dataTransfer?.getData("application/x-ohcredit-page");
+    if (!raw) {
+      const plain = (e.dataTransfer?.getData("text/plain") || "").trim();
+      const m = /^ohcredit-page:(\d+)$/.exec(plain);
+      if (m) return { fromIndex: parseInt(m[1], 10) };
+    }
+    if (!raw) return null;
+    try {
+      const o = JSON.parse(raw);
+      const fromIndex = typeof o.fromIndex === "number" ? o.fromIndex : parseInt(String(o.fromIndex), 10);
+      if (Number.isNaN(fromIndex)) return null;
+      return { fromIndex };
+    } catch {
+      return null;
+    }
+  }
+
   document.addEventListener("dragstart", (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
+    const handle = t.closest(".page-box-drag-handle");
+    if (handle && e.dataTransfer) {
+      const fromIndex = parseInt(handle.getAttribute("data-page-drag-index") || "-1", 10);
+      if (Number.isNaN(fromIndex) || fromIndex < 0) return;
+      const payload = JSON.stringify({ fromIndex });
+      e.dataTransfer.setData("application/x-ohcredit-page", payload);
+      e.dataTransfer.setData("text/plain", `ohcredit-page:${fromIndex}`);
+      e.dataTransfer.effectAllowed = "move";
+      handle.closest(".page-box")?.classList.add("page-box--page-source");
+      return;
+    }
     const card = t.closest(".credit-draggable");
     if (!card || !e.dataTransfer) return;
     const id = card.dataset.creditId;
@@ -1019,11 +1192,21 @@
     if (card) card.classList.remove("is-dragging");
     document.querySelectorAll(".page-box-drop-target").forEach((n) => n.classList.remove("page-box-drop-target"));
     document.querySelectorAll(".episode-tray").forEach((n) => n.classList.remove("episode-tray--drop-target"));
+    document.querySelectorAll(".page-box--page-drop-target").forEach((n) => n.classList.remove("page-box--page-drop-target"));
+    document.querySelectorAll(".page-box--page-source").forEach((n) => n.classList.remove("page-box--page-source"));
   });
 
   document.addEventListener("dragover", (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
+    if (e.dataTransfer?.types.includes("application/x-ohcredit-page")) {
+      const end = t.closest("[data-page-reorder-end]");
+      const box = t.closest(".page-box--organizer");
+      if (!end && !box) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      return;
+    }
     const zone = t.closest("[data-drop-page], .page-box-drop-zone, .credit-draggable, [data-episode-tray-drop]");
     if (!zone) return;
     const payload = e.dataTransfer?.types.includes("application/x-ohcredit");
@@ -1035,6 +1218,14 @@
   document.addEventListener("dragenter", (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
+    if (e.dataTransfer?.types.includes("application/x-ohcredit-page")) {
+      const end = t.closest("[data-page-reorder-end]");
+      const box = t.closest(".page-box--organizer");
+      if (!end && !box) return;
+      document.querySelectorAll(".page-box--page-drop-target").forEach((n) => n.classList.remove("page-box--page-drop-target"));
+      (end || box)?.classList.add("page-box--page-drop-target");
+      return;
+    }
     if (!e.dataTransfer?.types.includes("application/x-ohcredit")) return;
     const tray = t.closest("[data-episode-tray-drop]");
     if (tray) {
@@ -1049,6 +1240,15 @@
   document.addEventListener("dragleave", (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
+    if (e.dataTransfer?.types.includes("application/x-ohcredit-page")) {
+      const end = t.closest("[data-page-reorder-end]");
+      const box = t.closest(".page-box--organizer");
+      const zone = end || box;
+      if (zone && !zone.contains(/** @type {Node} */ (e.relatedTarget))) {
+        zone.classList.remove("page-box--page-drop-target");
+      }
+      return;
+    }
     const tray = t.closest("[data-episode-tray-drop]");
     if (tray) {
       if (!tray.contains(/** @type {Node} */ (e.relatedTarget))) {
@@ -1067,11 +1267,27 @@
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
     e.preventDefault();
-    const payload = dragPayload(e);
-    if (!payload) return;
 
     document.querySelectorAll(".page-box-drop-target").forEach((n) => n.classList.remove("page-box-drop-target"));
     document.querySelectorAll(".episode-tray").forEach((n) => n.classList.remove("episode-tray--drop-target"));
+    document.querySelectorAll(".page-box--page-drop-target").forEach((n) => n.classList.remove("page-box--page-drop-target"));
+
+    const pageMove = dragPagePayload(e);
+    if (pageMove) {
+      if (t.closest("[data-page-reorder-end]")) {
+        movePageBefore(pageMove.fromIndex, pages.length);
+        return;
+      }
+      const targetBox = t.closest(".page-box--organizer");
+      if (targetBox) {
+        const toIndex = parseInt(targetBox.getAttribute("data-page") || "0", 10);
+        movePageBefore(pageMove.fromIndex, toIndex);
+      }
+      return;
+    }
+
+    const payload = dragPayload(e);
+    if (!payload) return;
 
     const trayDrop = t.closest("[data-episode-tray-drop]");
     if (trayDrop && payload.id === EPISODE_ID) {
@@ -1321,7 +1537,12 @@
     await loadEditorConfig();
     loadRemoteFields();
     syncStoredEventIntoQuickPick();
-    renderPlayoutEmpty();
-    renderPageStrip();
+    if (els.jsonInput && !els.jsonInput.value.trim()) {
+      els.jsonInput.value = DEFAULT_CREDITS_JSON;
+      applyJsonFromText(DEFAULT_CREDITS_JSON, setJsonStatus);
+    } else {
+      renderPlayoutEmpty();
+      renderPageStrip();
+    }
   })();
 })();

@@ -100,7 +100,12 @@
             <button type="button" id="btn-load-json-url" class="btn">Load from URL</button>
           </div>
           <label for="json-input" class="json-label">Or paste JSON (episode + credits with role / people)</label>
-          <textarea id="json-input" rows="12" spellcheck="false" placeholder='{"episode":{...},"credits":[...]}'></textarea>
+          <textarea
+            id="json-input"
+            rows="12"
+            spellcheck="false"
+            placeholder='Loads a starter layout on first visit; replace names and roles, or paste your own JSON.'
+          ></textarea>
           <div class="json-actions">
             <button type="button" id="btn-apply-json" class="btn primary">Apply JSON</button>
             <span id="json-status" class="json-status" role="status"></span>
@@ -199,7 +204,7 @@
         <section class="layout-section" aria-labelledby="heading-pages">
           <h2 id="heading-pages" class="workspace-heading">Pages</h2>
           <p class="layout-hint">
-            One order for both formats — drag roles and optional title/date between boxes. Use <strong>Publish credits</strong> for Supabase, <strong>Links</strong> to copy player URLs, <strong>Cloud settings</strong> for event and secret, and <strong>Paste credits JSON</strong> or a JSON URL to load roles.
+            One order for both formats — drag roles and optional title/date between boxes; use the <strong>grip</strong> beside a page title to drag whole pages before another page, or onto <strong>Last</strong> to move a page to the end. Use <strong>Publish credits</strong> for Supabase, <strong>Links</strong> to copy player URLs, <strong>Cloud settings</strong> for event and secret, and <strong>Paste credits JSON</strong> or a JSON URL to load roles.
           </p>
           <div id="episode-tray-host" class="episode-tray-host"></div>
           <div id="page-strip" class="page-strip page-strip--shared"></div>
