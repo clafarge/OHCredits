@@ -129,15 +129,17 @@
    */
   function estimateItemPx(item, aspect) {
     const cpl = CPL[aspect];
-    let h = ROLE_BLOCK_PX;
-    if (item.people.length === 0) h += LINE_PX;
+    const scale = aspect === "916" ? 15 / 17 : 1;
+    let h = ROLE_BLOCK_PX * scale;
+    const line = LINE_PX * scale;
+    if (item.people.length === 0) h += line;
     else {
       for (const p of item.people) {
         const lines = Math.max(1, Math.ceil(p.length / cpl));
-        h += lines * LINE_PX;
+        h += lines * line;
       }
     }
-    h += BLOCK_GAP_PX;
+    h += BLOCK_GAP_PX * scale;
     return h;
   }
 
@@ -657,6 +659,21 @@
       if (aspect === "169" || aspect === "916") addEmptyPage(aspect);
     });
   });
+
+  function applyViewFromQuery() {
+    const app = document.querySelector(".app");
+    if (!app) return;
+    const p = new URLSearchParams(window.location.search);
+    const raw = (p.get("view") || p.get("format") || "").toLowerCase().replace(/_/g, "");
+    app.classList.remove("app--169-only", "app--916-only");
+    if (raw === "16x9" || raw === "169" || raw === "horizontal" || raw === "landscape") {
+      app.classList.add("app--169-only");
+    } else if (raw === "9x16" || raw === "916" || raw === "vertical" || raw === "portrait") {
+      app.classList.add("app--916-only");
+    }
+  }
+
+  applyViewFromQuery();
 
   renderPlayoutEmpty();
   renderPageStrips();
