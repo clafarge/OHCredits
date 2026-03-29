@@ -26,7 +26,8 @@
   /**
    * First-load credits template. `_designerPageHint: "starter-v2"` (recommended): semantic pages —
    * Host + Reader on page 1; Panelists on page 1 only if fewer than 7 names, else their own page;
-   * Contributors (height-paginated); short roles (≤2 names) ~3 per page; larger groups near the end;
+   * Contributors (height-paginated); short roles (1–2 names each) grouped ~3 roles per page (balanced
+   * so we avoid e.g. 4+2 when 3+3 is possible); larger groups near the end;
    * "Special thanks" last. `starter-v1` keeps the older index-based layout.
    */
   const DEFAULT_CREDITS_JSON = `{
@@ -80,12 +81,71 @@
   const ROLE_BLOCK_PX = 18;
   const BLOCK_GAP_PX = 14;
 
+  /** Next row index for `c-{n}-*` ids so merges stay compatible with groupItemOrderByCreditRow. */
+  function nextCreditRowBaseIndex() {
+    let max = -1;
+    for (const id of itemsById.keys()) {
+      const m = /^c-(\d+)-/.exec(id);
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    }
+    return max + 1;
+  }
+
+  /**
+   * @param {unknown[]} credits
+   * @param {number} baseRowIndex First JSON row maps to this credit row index (0 for a fresh replace).
+   * @returns {{ items: Map<string, { role: string, people: string[] }>, order: string[] }}
+   */
+  function buildCreditItemsMap(credits, baseRowIndex) {
+    const items = new Map();
+    /** @type {string[]} */
+    const order = [];
+    for (let i = 0; i < credits.length; i++) {
+      const row = credits[i];
+      if (!row || typeof row !== "object") continue;
+      const rowIndex = baseRowIndex + i;
+      const role = typeof row.role === "string" ? row.role.trim() : "";
+      let people = row.people;
+      if (!Array.isArray(people)) people = [];
+      const names = OH.sortPeopleNames(
+        people
+          .map((p) => (typeof p === "string" ? p.trim() : String(p)))
+          .filter(Boolean)
+      );
+      const roleStr = role || "—";
+      const isCustomCard =
+        row &&
+        typeof row === "object" &&
+        /** @type {{ kind?: string }} */ (row).kind === "customCard";
+      const groups = OH.chunkPeopleGroups(names);
+      if (groups.length === 0) {
+        const id = `c-${rowIndex}-0`;
+        items.set(
+          id,
+          isCustomCard ? { role: roleStr, people: [], kind: "customCard" } : { role: roleStr, people: [] }
+        );
+        order.push(id);
+      } else {
+        groups.forEach((chunk, gi) => {
+          const id = `c-${rowIndex}-g${gi}`;
+          items.set(
+            id,
+            isCustomCard ? { role: roleStr, people: chunk, kind: "customCard" } : { role: roleStr, people: chunk }
+          );
+          order.push(id);
+        });
+      }
+    }
+    return { items, order };
+  }
+
   const els = {
     toggleJson: document.getElementById("btn-toggle-json"),
     jsonPanel: document.getElementById("json-panel"),
     jsonInput: document.getElementById("json-input"),
     jsonStatus: document.getElementById("json-status"),
-    applyJson: document.getElementById("btn-apply-json"),
+    btnAddJson: document.getElementById("btn-add-json"),
+    btnClearJson: document.getElementById("btn-clear-json"),
     slide169: document.getElementById("slide-content-169"),
     slide916: document.getElementById("slide-content-916"),
     pageStrip: document.getElementById("page-strip"),
@@ -111,6 +171,9 @@
     btnTogglePublishSecret: document.getElementById("btn-toggle-publish-secret"),
     jsonUrlInput: document.getElementById("json-url-input"),
     btnLoadJsonUrl: document.getElementById("btn-load-json-url"),
+    newCardRole: document.getElementById("new-card-role"),
+    newCardBody: document.getElementById("new-card-body"),
+    btnAddCustomCard: document.getElementById("btn-add-custom-card"),
   };
 
   /** @type {string | null} */
@@ -119,6 +182,9 @@
   let itemsById = new Map();
   /** @type {string[][]} shared page layout for both 16:9 and 9:16 */
   let pages = [[]];
+
+  /** Credit ids off all pages (staged with title/date area); not shown in play until placed on a page. */
+  let parkedIds = [];
 
   let playAbort = null;
 
@@ -480,6 +546,39 @@
     return out;
   }
 
+  const STARTER_SHORT_ROLES_PER_PAGE = 3;
+
+  /**
+   * Short roles (1–2 names each): aim for {@link STARTER_SHORT_ROLES_PER_PAGE} roles per page.
+   * When the count is 4,7,10,… (n≡1 mod 3, n≥4), use 2+2+…+3 pattern instead of 3+…+1 so pages stay even.
+   * @param {{ row: number, ids: string[] }[]} runs
+   * @returns {string[][]}
+   */
+  function paginateShortRunsThreePerPage(runs) {
+    const n = runs.length;
+    if (n === 0) return [];
+    const per = STARTER_SHORT_ROLES_PER_PAGE;
+    /** @type {string[][]} */
+    const pageIdLists = [];
+    let i = 0;
+    if (n % per === 1 && n >= per + 1) {
+      const firstSize = 2;
+      pageIdLists.push(flattenRuns(runs.slice(0, firstSize)));
+      i = firstSize;
+      while (i < n) {
+        const take = Math.min(per, n - i);
+        pageIdLists.push(flattenRuns(runs.slice(i, i + take)));
+        i += take;
+      }
+      return pageIdLists;
+    }
+    while (i < n) {
+      pageIdLists.push(flattenRuns(runs.slice(i, i + per)));
+      i += per;
+    }
+    return pageIdLists;
+  }
+
   /**
    * `_designerPageHint: "starter-v2"`. Page 1 is Host + Reader only, except Panelists may share
    * page 1 when their total name count is fewer than 7 (see PANELISTS_MERGE_ON_PAGE1_MAX).
@@ -534,9 +633,8 @@
     const contribIds = flattenRuns(contributors);
     if (contribIds.length) pages.push(...autoPaginateShared(contribIds));
 
-    for (let i = 0; i < shortRuns.length; i += 3) {
-      const ids = flattenRuns(shortRuns.slice(i, i + 3));
-      if (ids.length) pages.push(ids);
+    for (const idPage of paginateShortRunsThreePerPage(shortRuns)) {
+      if (idPage.length) pages.push(idPage);
     }
 
     const largeIds = flattenRuns(largeRuns);
@@ -560,12 +658,19 @@
   }
 
   function creditBlockHtml(item, id) {
-    return `<div class="slide-credit-block credit-draggable" draggable="true" data-credit-id="${OH.escapeHtml(id)}">${OH.creditInnerHtml(item)}</div>`;
+    const safeId = OH.escapeHtml(id);
+    return `<div class="slide-credit-block credit-draggable credit-draggable--with-controls" draggable="true" data-credit-id="${safeId}">
+      <button type="button" class="credit-card-remove" data-remove-credit="${safeId}" draggable="false" aria-label="Remove this card from the design" title="Remove">×</button>
+      <div class="credit-draggable-body">${OH.creditInnerHtml(item)}</div>
+    </div>`;
   }
 
   function episodeBlockHtml() {
     if (!episodeHtml) return "";
-    return `<div class="slide-credit-block slide-episode-block credit-draggable" draggable="true" data-credit-id="${EPISODE_ID}">${episodeHtml}</div>`;
+    return `<div class="slide-credit-block slide-episode-block credit-draggable credit-draggable--with-controls credit-draggable--title-card" draggable="true" data-credit-id="${EPISODE_ID}">
+      <button type="button" class="credit-card-remove credit-card-remove--episode" data-remove-credit="${EPISODE_ID}" draggable="false" aria-label="Remove title card from design" title="Remove title card">×</button>
+      <div class="credit-draggable-body">${episodeHtml}</div>
+    </div>`;
   }
 
   function episodeOnAPage() {
@@ -575,75 +680,121 @@
   function renderEpisodeTray() {
     const host = els.episodeTrayHost;
     if (!host) return;
-    if (!episodeHtml) {
+
+    parkedIds = parkedIds.filter((id) => itemsById.has(id));
+
+    const hasSomething = itemsById.size > 0 || episodeHtml || parkedIds.length > 0;
+    if (!hasSomething) {
       host.innerHTML = "";
       return;
     }
+
     const onPage = episodeOnAPage();
-    host.innerHTML = onPage
-      ? `<div class="episode-tray" data-episode-tray-drop="1" aria-label="Drop zone to remove episode from show">
-          <p class="episode-tray-sink-msg">Drop the <strong>title & date</strong> block here to omit it from the show (or drag it between pages below).</p>
-        </div>`
-      : `<div class="episode-tray" data-episode-tray-drop="1">
-          <p class="layout-hint episode-tray-hint" style="margin:0 0 10px;">
-            Drag <strong>title & date</strong> onto a page below to include them, or leave here to skip. Use a <strong>blank first page</strong> to fade from black into title or credits.
-          </p>
-          <div class="episode-tray-chip-wrap">${episodeBlockHtml()}</div>
-        </div>`;
-  }
+    const parkedHtml = parkedIds
+      .map((pid) => {
+        const item = itemsById.get(pid);
+        return item ? creditBlockHtml(item, pid) : "";
+      })
+      .join("");
 
-  function parseCreditsPayload(text) {
-    const data = JSON.parse(text);
-    if (!data || typeof data !== "object") throw new Error("Root must be an object");
-
-    const episode = data.episode && typeof data.episode === "object" ? data.episode : null;
-    const credits = Array.isArray(data.credits) ? data.credits : null;
-    if (!credits) throw new Error('Missing "credits" array');
-
-    let epHtml = null;
-    const title = episode && typeof episode.title === "string" ? episode.title.trim() : "";
-    const date = episode && typeof episode.date === "string" ? episode.date.trim() : "";
-    if (title || date) {
-      let h = "";
-      if (title) h += `<h1 class="slide-episode-title">${OH.escapeHtml(title)}</h1>`;
-      if (date) h += `<p class="slide-episode-date">${OH.escapeHtml(date)}</p>`;
-      epHtml = h;
-    }
-
-    /** @type {string[]} */
-    const order = [];
-    itemsById = new Map();
-
-    for (let i = 0; i < credits.length; i++) {
-      const row = credits[i];
-      if (!row || typeof row !== "object") continue;
-      const role = typeof row.role === "string" ? row.role.trim() : "";
-      let people = row.people;
-      if (!Array.isArray(people)) people = [];
-      const names = OH.sortPeopleNames(
-        people
-          .map((p) => (typeof p === "string" ? p.trim() : String(p)))
-          .filter(Boolean)
-      );
-      const roleStr = role || "—";
-      const groups = OH.chunkPeopleGroups(names);
-      if (groups.length === 0) {
-        const id = `c-${i}-0`;
-        itemsById.set(id, { role: roleStr, people: [] });
-        order.push(id);
+    let episodeSlot = "";
+    if (episodeHtml) {
+      if (onPage) {
+        episodeSlot = `<p class="episode-tray-sink-msg layout-hint" style="margin:0 0 8px;">The title card is on a page — drop it here to return it to staging, or drop credit cards here to stage them.</p>`;
       } else {
-        groups.forEach((chunk, gi) => {
-          const id = `c-${i}-g${gi}`;
-          itemsById.set(id, { role: roleStr, people: chunk });
-          order.push(id);
-        });
+        episodeSlot = `<p class="episode-tray-slot-label">Title card</p>
+          <div class="episode-tray-chip-wrap episode-tray-chip-wrap--title">${episodeBlockHtml()}</div>`;
       }
     }
 
-    if (order.length === 0 && !epHtml) throw new Error("No credits or episode content");
+    const parkedSlot =
+      parkedHtml.length > 0
+        ? `<p class="episode-tray-slot-label">Staged credit cards (hidden in play)</p>
+           <div class="episode-tray-chip-wrap episode-tray-chip-wrap--parked">${parkedHtml}</div>`
+        : "";
+
+    host.innerHTML = `${episodeSlot}${parkedSlot}`;
+  }
+
+  function hasExistingDesign() {
+    if (episodeHtml) return true;
+    if (itemsById.size > 0) return true;
+    if (parkedIds.length > 0) return true;
+    return pages.some((pg) => pg.length > 0);
+  }
+
+  /**
+   * @param {string} text
+   * @param {boolean} merge When true, use unique row ids so new credits can be appended to itemsById.
+   */
+  function parseCreditsPayload(text, merge) {
+    const data = JSON.parse(text);
+    if (!data || typeof data !== "object") throw new Error("Root must be an object");
+
+    const credits = Array.isArray(data.credits) ? data.credits : null;
+    if (!credits) throw new Error('Missing "credits" array');
+
+    const episodeKeyInJson = Object.prototype.hasOwnProperty.call(data, "episode");
+
+    let epHtml = null;
+    const episode = data.episode;
+    if (episode != null && typeof episode === "object") {
+      const title = typeof episode.title === "string" ? episode.title.trim() : "";
+      const date = typeof episode.date === "string" ? episode.date.trim() : "";
+      if (title || date) {
+        let h = "";
+        if (title) h += `<h1 class="slide-episode-title">${OH.escapeHtml(title)}</h1>`;
+        if (date) h += `<p class="slide-episode-date">${OH.escapeHtml(date)}</p>`;
+        epHtml = h;
+      }
+    }
+
+    const baseRow = merge ? nextCreditRowBaseIndex() : 0;
+    const { items, order } = buildCreditItemsMap(credits, baseRow);
+
+    if (order.length === 0 && !epHtml) {
+      if (!merge || !episodeKeyInJson) {
+        throw new Error(
+          merge
+            ? "Nothing to add — include credits or an episode object in the JSON."
+            : "No credits or episode content"
+        );
+      }
+    }
+
     const designerPageHint =
       typeof data._designerPageHint === "string" ? data._designerPageHint.trim() : "";
-    return { episodeHtml: epHtml, itemOrder: order, designerPageHint };
+    return {
+      items,
+      itemOrder: order,
+      episodeHtml: epHtml,
+      episodeKeyInJson,
+      designerPageHint,
+    };
+  }
+
+  /**
+   * @param {string[]} itemOrder
+   * @param {string} designerPageHint
+   * @returns {string[][]}
+   */
+  function layoutPagesForOrder(itemOrder, designerPageHint) {
+    if (!itemOrder.length) return [];
+    if (designerPageHint === "starter-v2") return paginateSemanticStarterLayout(itemOrder);
+    if (designerPageHint === "starter-v1") return paginateStarterLayout(itemOrder);
+    return autoPaginateShared(itemOrder);
+  }
+
+  function clearDesignFromJson() {
+    itemsById = new Map();
+    episodeHtml = null;
+    pages = [[]];
+    parkedIds = [];
+    if (els.jsonInput) els.jsonInput.value = "";
+    setJsonStatus("Cleared credits, pages, and title/date.", "ok");
+    renderEpisodeTray();
+    renderPageStrip();
+    renderPlayoutEmpty();
   }
 
   /**
@@ -651,50 +802,82 @@
    * @param {(msg: string, kind?: string) => void} [setStatus]
    * @returns {boolean}
    */
-  function applyJsonFromText(text, setStatus) {
+  function addJsonFromText(text, setStatus) {
     const report = setStatus || setJsonStatus;
     const t = (text || "").trim();
     if (!t) {
-      report("Paste JSON first.", "error");
+      report("Paste JSON first, then Add JSON.", "error");
       return false;
     }
+    const merging = hasExistingDesign();
     try {
-      const { episodeHtml: ep, itemOrder, designerPageHint } = parseCreditsPayload(t);
-      episodeHtml = ep;
-      if (itemOrder.length && designerPageHint === "starter-v2") {
-        pages = paginateSemanticStarterLayout(itemOrder);
-      } else if (itemOrder.length && designerPageHint === "starter-v1") {
-        pages = paginateStarterLayout(itemOrder);
-      } else {
-        pages = itemOrder.length ? autoPaginateShared(itemOrder) : [[]];
-      }
-      const n = itemOrder.length;
+      const parsed = parseCreditsPayload(t, merging);
+      const n = parsed.itemOrder.length;
+      const hint = parsed.designerPageHint;
       const layoutNote =
-        designerPageHint === "starter-v2"
-          ? " Starter layout v2: page 1 Host+Reader (Panelists if fewer than 7 names), then Contributors, ~3 short roles/page, large groups, thanks."
-          : designerPageHint === "starter-v1"
+        hint === "starter-v2"
+          ? " Starter layout v2: Host+Reader (Panelists if fewer than 7 names), Contributors, then ~3 short roles (1-2 names) per page, large groups, thanks."
+          : hint === "starter-v1"
             ? " Starter page layout (Host+Reader, ~3 roles/page, heavy lists then thanks)."
             : "";
-      report(
-        `${n} credit block(s) · ${pages.length} page(s) · long roles split into ≤${PEOPLE_MAX_PER_GROUP} names per block; drag each block separately.${layoutNote}`,
-        "ok"
-      );
+
+      if (!merging) {
+        itemsById = parsed.items;
+        parkedIds = [];
+        if (parsed.episodeKeyInJson) {
+          episodeHtml = parsed.episodeHtml;
+        } else {
+          episodeHtml = null;
+        }
+        if (n) {
+          pages = layoutPagesForOrder(parsed.itemOrder, hint);
+        } else {
+          pages = [[]];
+        }
+        report(
+          `${n} credit block(s) · ${pages.length} page(s) · long roles split into ≤${PEOPLE_MAX_PER_GROUP} names per block; drag each block separately.${layoutNote}`,
+          "ok"
+        );
+      } else {
+        for (const [id, it] of parsed.items) {
+          itemsById.set(id, it);
+        }
+        if (parsed.episodeKeyInJson) {
+          episodeHtml = parsed.episodeHtml;
+        }
+        const prevPageCount = pages.length;
+        if (n) {
+          const newPages = layoutPagesForOrder(parsed.itemOrder, hint);
+          pages = normalizePages([...pages, ...newPages]);
+          const addedPages = pages.length - prevPageCount;
+          report(
+            `Merged ${n} new credit block(s) · +${addedPages} page(s) (${pages.length} total) · split into ≤${PEOPLE_MAX_PER_GROUP} names per block when long.${layoutNote}`,
+            "ok"
+          );
+        } else if (parsed.episodeKeyInJson) {
+          report("Updated title/date from JSON (no new credits).", "ok");
+        }
+      }
+      renderEpisodeTray();
       renderPageStrip();
       renderPlayoutEmpty();
       return true;
     } catch (e) {
-      itemsById = new Map();
-      episodeHtml = null;
-      pages = [[]];
+      if (!merging) {
+        itemsById = new Map();
+        episodeHtml = null;
+        pages = [[]];
+        parkedIds = [];
+        renderPageStrip();
+        renderPlayoutEmpty();
+      }
       report(e instanceof Error ? e.message : String(e), "error");
-      renderPageStrip();
-      renderPlayoutEmpty();
       return false;
     }
   }
 
-  function applyJsonFromInput() {
-    applyJsonFromText(els.jsonInput.value, setJsonStatus);
+  function addJsonFromInput() {
+    addJsonFromText(els.jsonInput.value, setJsonStatus);
   }
 
   async function loadCreditsJsonFromUrl() {
@@ -730,11 +913,11 @@
       return;
     }
     els.jsonInput.value = text;
-    applyJsonFromText(text, setJsonStatus);
+    addJsonFromText(text, setJsonStatus);
   }
 
   function renderPlayoutEmpty() {
-    const msg = `<p class="slide-empty">No data — paste JSON and Apply.</p>`;
+    const msg = `<p class="slide-empty">No data — paste JSON and use Add JSON, or Clear JSON to start fresh.</p>`;
     els.slide169.innerHTML = msg;
     els.slide916.innerHTML = msg;
   }
@@ -766,10 +949,14 @@
       }
     }
 
-    if (id !== EPISODE_ID && fromPi === -1) return;
+    const fromParked = parkedIds.indexOf(id) !== -1;
+    if (id !== EPISODE_ID && fromPi === -1 && !fromParked) return;
 
     if (id === EPISODE_ID) {
       stripEpisodeFromPages();
+    } else if (fromParked) {
+      const pi = parkedIds.indexOf(id);
+      if (pi !== -1) parkedIds.splice(pi, 1);
     } else {
       pages[fromPi].splice(fromIi, 1);
     }
@@ -781,12 +968,65 @@
     pages[toPageIndex].splice(ins, 0, id);
     pages = normalizePages(pages);
     renderPageStrip();
+    renderEpisodeTray();
+  }
+
+  function parkCredit(id) {
+    if (id === EPISODE_ID) {
+      removeEpisodeFromShow();
+      return;
+    }
+    for (let pi = 0; pi < pages.length; pi++) {
+      const ix = pages[pi].indexOf(id);
+      if (ix !== -1) pages[pi].splice(ix, 1);
+    }
+    pages = normalizePages(pages);
+    if (!parkedIds.includes(id)) parkedIds.push(id);
+    renderPageStrip();
+    renderEpisodeTray();
+  }
+
+  function removeCreditOrEpisodeFromDesign(id) {
+    if (id === EPISODE_ID) {
+      stripEpisodeFromPages();
+      episodeHtml = null;
+    } else {
+      for (let pi = 0; pi < pages.length; pi++) {
+        const ix = pages[pi].indexOf(id);
+        if (ix !== -1) pages[pi].splice(ix, 1);
+      }
+      itemsById.delete(id);
+      parkedIds = parkedIds.filter((x) => x !== id);
+    }
+    pages = normalizePages(pages);
+    renderEpisodeTray();
+    renderPageStrip();
+    if (itemsById.size === 0 && !episodeHtml) {
+      renderPlayoutEmpty();
+    }
+  }
+
+  function addCustomCardToLayout() {
+    const role = (els.newCardRole && els.newCardRole.value.trim()) || "Card";
+    const raw = (els.newCardBody && els.newCardBody.value.trim()) || "";
+    let people = raw.split(/\n/).map((l) => l.trim()).filter(Boolean);
+    if (people.length === 0) people = ["New card — add lines via JSON export or merge."];
+    const row = nextCreditRowBaseIndex();
+    const id = `c-${row}-0`;
+    itemsById.set(id, { role, people, kind: "customCard" });
+    if (pages.length === 0) pages = [[]];
+    pages[pages.length - 1].push(id);
+    pages = normalizePages(pages);
+    renderPageStrip();
+    renderEpisodeTray();
+    setJsonStatus("Added custom card on the last page — drag to reorder or stage above.", "ok");
   }
 
   function removeEpisodeFromShow() {
     stripEpisodeFromPages();
     pages = normalizePages(pages);
     renderPageStrip();
+    renderEpisodeTray();
   }
 
   function addEmptyPage() {
@@ -892,7 +1132,7 @@
 
     if (itemsById.size === 0 && !episodeHtml) {
       els.pageStrip.innerHTML =
-        '<p class="slide-empty" style="font-size:13px;padding:8px 0;">Apply JSON to see page boxes.</p>';
+        '<p class="slide-empty" style="font-size:13px;padding:8px 0;">Add JSON (or Clear JSON and add) to see page boxes.</p>';
       return;
     }
 
@@ -942,6 +1182,8 @@
     els.btnStop.disabled = !playing;
     els.btnPreview.disabled = playing;
     els.toggleJson.disabled = playing;
+    if (els.btnAddJson) els.btnAddJson.disabled = playing;
+    if (els.btnClearJson) els.btnClearJson.disabled = playing;
     if (els.btnExportDesignJson) els.btnExportDesignJson.disabled = playing;
     if (els.toggleRemote) els.toggleRemote.disabled = playing;
     if (els.btnPublishCredits) els.btnPublishCredits.disabled = playing;
@@ -949,6 +1191,9 @@
     if (els.btnTogglePublishSecret) els.btnTogglePublishSecret.disabled = playing;
     if (els.btnReloadEditorConfig) els.btnReloadEditorConfig.disabled = playing;
     if (els.btnLoadJsonUrl) els.btnLoadJsonUrl.disabled = playing;
+    if (els.btnAddCustomCard) els.btnAddCustomCard.disabled = playing;
+    if (els.newCardRole) els.newCardRole.disabled = playing;
+    if (els.newCardBody) els.newCardBody.disabled = playing;
   }
 
   function designStateForShare() {
@@ -956,6 +1201,7 @@
       v: 1,
       episodeHtml,
       pages,
+      parkedIds: [...parkedIds],
       items: Object.fromEntries(itemsById),
     };
   }
@@ -980,7 +1226,7 @@
   async function copyPlayerLink(viewParam, label, report) {
     const r = report || setJsonStatus;
     if (itemsById.size === 0 && !episodeHtml) {
-      r("Apply JSON and arrange pages before copying a player link.", "error");
+      r("Add JSON and arrange pages before copying a player link.", "error");
       return;
     }
     const ok = await copyTextToClipboard(playerUrlForView(viewParam));
@@ -997,7 +1243,7 @@
   async function copyPlayerFileLink(viewParam, label, report) {
     const r = report || setJsonStatus;
     if (itemsById.size === 0 && !episodeHtml) {
-      r("Apply JSON and arrange pages before copying a player link.", "error");
+      r("Add JSON and arrange pages before copying a player link.", "error");
       return;
     }
     const ok = await copyTextToClipboard(playerUrlForJsonFile(viewParam));
@@ -1010,7 +1256,7 @@
 
   async function exportDesignJson() {
     if (itemsById.size === 0 && !episodeHtml) {
-      setJsonStatus("Nothing to export — apply JSON and arrange pages first.", "error");
+      setJsonStatus("Nothing to export — add JSON and arrange pages first.", "error");
       return;
     }
     const json = JSON.stringify(designStateForShare(), null, 2);
@@ -1093,7 +1339,7 @@
 
   async function publishRemote() {
     if (itemsById.size === 0 && !episodeHtml) {
-      setToolbarPublishStatus("Apply JSON and arrange pages before publishing.", "error");
+      setToolbarPublishStatus("Add JSON and arrange pages before publishing.", "error");
       return;
     }
     const code = els.remoteEvent ? els.remoteEvent.value.trim() : "";
@@ -1224,7 +1470,7 @@
   function previewFirstSlide() {
     stopPlayout();
     if (itemsById.size === 0 && !episodeHtml) {
-      applyJsonFromInput();
+      addJsonFromInput();
       if (itemsById.size === 0 && !episodeHtml) return;
     }
     const s169 = buildSlidesForAspect("169");
@@ -1279,6 +1525,7 @@
       handle.closest(".page-box")?.classList.add("page-box--page-source");
       return;
     }
+    if (t.closest(".credit-card-remove")) return;
     const card = t.closest(".credit-draggable");
     if (!card || !e.dataTransfer) return;
     const id = card.dataset.creditId;
@@ -1393,8 +1640,12 @@
     if (!payload) return;
 
     const trayDrop = t.closest("[data-episode-tray-drop]");
-    if (trayDrop && payload.id === EPISODE_ID) {
-      removeEpisodeFromShow();
+    if (trayDrop) {
+      if (payload.id === EPISODE_ID) {
+        removeEpisodeFromShow();
+      } else {
+        parkCredit(payload.id);
+      }
       return;
     }
 
@@ -1424,6 +1675,17 @@
       const pageIndex = parseInt(pageBox.dataset.page || "0", 10);
       moveCredit(payload.id, pageIndex, null);
     }
+  });
+
+  document.addEventListener("click", (e) => {
+    const t = e.target;
+    if (!(t instanceof HTMLElement)) return;
+    const rm = t.closest("[data-remove-credit]");
+    if (!rm) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const id = rm.getAttribute("data-remove-credit");
+    if (id) removeCreditOrEpisodeFromDesign(id);
   });
 
   els.toggleJson.addEventListener("click", () => {
@@ -1565,7 +1827,12 @@
     });
   }
 
-  els.applyJson.addEventListener("click", applyJsonFromInput);
+  if (els.btnAddJson) {
+    els.btnAddJson.addEventListener("click", addJsonFromInput);
+  }
+  if (els.btnClearJson) {
+    els.btnClearJson.addEventListener("click", clearDesignFromJson);
+  }
 
   els.btnPreview.addEventListener("click", previewFirstSlide);
 
@@ -1586,6 +1853,11 @@
   if (els.btnLoadJsonUrl) {
     els.btnLoadJsonUrl.addEventListener("click", () => {
       void loadCreditsJsonFromUrl();
+    });
+  }
+  if (els.btnAddCustomCard) {
+    els.btnAddCustomCard.addEventListener("click", () => {
+      addCustomCardToLayout();
     });
   }
   if (els.jsonUrlInput) {
@@ -1642,7 +1914,7 @@
     syncStoredEventIntoQuickPick();
     if (els.jsonInput && !els.jsonInput.value.trim()) {
       els.jsonInput.value = DEFAULT_CREDITS_JSON;
-      applyJsonFromText(DEFAULT_CREDITS_JSON, setJsonStatus);
+      addJsonFromText(DEFAULT_CREDITS_JSON, setJsonStatus);
     } else {
       renderPlayoutEmpty();
       renderPageStrip();

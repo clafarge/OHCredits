@@ -94,17 +94,19 @@
 
   function roleForDisplay(item) {
     const base = item.role || "—";
+    if (item.kind === "customCard") return base;
     if (item.people.length <= 1) return base;
     return pluralizeRolePhrase(base);
   }
 
   function creditInnerHtml(item) {
     const roleHtml = escapeHtml(roleForDisplay(item));
+    const cardClass = item.kind === "customCard" ? " slide-credit-block--custom-card" : "";
     if (item.people.length === 0) {
-      return `<h2 class="slide-role">${roleHtml}</h2><p class="slide-empty">No names listed</p>`;
+      return `<div class="slide-credit-inner${cardClass}"><h2 class="slide-role">${roleHtml}</h2><p class="slide-empty">No lines yet</p></div>`;
     }
     const list = `<ul class="slide-people">${item.people.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`;
-    return `<h2 class="slide-role">${roleHtml}</h2>${list}`;
+    return `<div class="slide-credit-inner${cardClass}"><h2 class="slide-role">${roleHtml}</h2>${list}</div>`;
   }
 
   /**

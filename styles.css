@@ -645,7 +645,7 @@ select.remote-input {
   font-size: 11px;
 }
 
-.episode-tray-host {
+.episode-tray--staging {
   margin-bottom: 16px;
 }
 
@@ -655,6 +655,52 @@ select.remote-input {
   border: 1px dashed #444;
   background: #0d0d0d;
   max-width: 52rem;
+}
+
+.episode-tray-dynamic:empty {
+  display: none;
+}
+
+.episode-tray-dynamic:not(:empty) {
+  margin-bottom: 4px;
+}
+
+.episode-tray-composer {
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid #333;
+  max-width: 36rem;
+}
+
+.episode-tray-composer-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #9a9a9a;
+}
+
+.episode-tray-composer-label {
+  margin-top: 8px;
+}
+
+.episode-tray-composer-input {
+  margin-top: 4px;
+}
+
+.episode-tray-composer-btn {
+  margin-top: 10px;
+}
+
+.episode-tray-chip-wrap--title {
+  justify-content: center;
+}
+
+.page-box--organizer .credit-draggable--title-card {
+  border-color: rgba(100, 140, 200, 0.28);
+}
+
+.page-box--organizer .credit-draggable--title-card:hover {
+  border-color: rgba(120, 160, 220, 0.45);
 }
 
 .episode-tray.episode-tray--drop-target {
@@ -669,10 +715,26 @@ select.remote-input {
   line-height: 1.45;
 }
 
+.episode-tray-slot-label {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  letter-spacing: 0.02em;
+}
+
 .episode-tray-chip-wrap {
   margin-top: 8px;
   display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.episode-tray-chip-wrap .credit-draggable--with-controls {
+  flex: 0 1 auto;
+  max-width: 100%;
 }
 
 .slide-episode-block {
@@ -800,6 +862,11 @@ select.remote-input {
 .page-box--organizer .credit-draggable {
   margin-bottom: 6px;
   padding: 2px 2px;
+}
+
+.page-box--organizer .credit-draggable--with-controls {
+  padding-top: 20px;
+  padding-right: 22px;
 }
 
 .page-box-header {
@@ -938,6 +1005,45 @@ select.remote-input {
 
 .page-box-inner--overflow {
   box-shadow: inset 0 0 0 2px rgba(201, 122, 122, 0.55);
+}
+
+.credit-draggable--with-controls {
+  position: relative;
+  padding-top: 22px;
+  padding-right: 26px;
+}
+
+.credit-draggable-body {
+  min-width: 0;
+}
+
+.credit-card-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 2;
+  margin: 0;
+  padding: 0 5px;
+  min-width: 26px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(90, 20, 20, 0.9);
+  color: #ff8a80;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.15;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.credit-card-remove:hover {
+  color: #fff;
+  background: #c62828;
+}
+
+.credit-card-remove:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .credit-draggable {

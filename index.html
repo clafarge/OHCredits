@@ -93,7 +93,7 @@
         <div id="json-panel" class="json-panel hidden" hidden>
           <label class="json-label" for="json-url-input">Role / credits JSON URL</label>
           <p class="json-url-hint">
-            Fetch credits JSON from a URL (same site or CORS-enabled). Loaded text replaces the box below and runs the same steps as <strong>Apply JSON</strong>.
+            Fetch credits JSON from a URL (same site or CORS-enabled). Loaded text replaces the box below and runs the same steps as <strong>Add JSON</strong> (merge if you already have credits).
           </p>
           <div class="json-url-row">
             <input
@@ -111,10 +111,25 @@
             id="json-input"
             rows="12"
             spellcheck="false"
-            placeholder='Loads a starter layout on first visit; replace names and roles, or paste your own JSON.'
+            placeholder='Starter loads on first visit. Add JSON merges new credits after existing pages when you already have a layout; use Clear for a fresh start.'
           ></textarea>
           <div class="json-actions">
-            <button type="button" id="btn-apply-json" class="btn primary">Apply JSON</button>
+            <button
+              type="button"
+              id="btn-add-json"
+              class="btn primary"
+              title="Load credits from the box below. If a layout already exists, new roles are added after your current pages."
+            >
+              Add JSON
+            </button>
+            <button
+              type="button"
+              id="btn-clear-json"
+              class="btn"
+              title="Remove all credits, pages, and title/date from the design and clear this box."
+            >
+              Clear JSON
+            </button>
             <span id="json-status" class="json-status" role="status"></span>
           </div>
         </div>
@@ -211,9 +226,50 @@
         <section class="layout-section" aria-labelledby="heading-pages">
           <h2 id="heading-pages" class="workspace-heading">Pages</h2>
           <p class="layout-hint">
-            One order for both formats — drag roles and optional title/date between boxes; use the <strong>grip</strong> beside a page title to drag whole pages before another page, or onto <strong>Last</strong> to move a page to the end. Use <strong>Publish credits</strong> for Supabase, <strong>Links</strong> to copy player URLs, <strong>Cloud settings</strong> for event and secret, and <strong>Paste credits JSON</strong> or a JSON URL to load roles.
+            One order for both formats — drag cards between page boxes or into the <strong>staging</strong> strip below (staged items do not play until placed on a page). Use the red <strong>×</strong> to remove a card. Use the <strong>grip</strong> beside a page title to reorder pages, or drop on <strong>Last</strong> to move a page to the end. Load roles via <strong>Paste credits JSON</strong> → <strong>Add JSON</strong> (or a JSON URL); <strong>Publish credits</strong>, <strong>Links</strong>, and <strong>Cloud settings</strong> for the player; <strong>Clear JSON</strong> resets the layout.
           </p>
-          <div id="episode-tray-host" class="episode-tray-host"></div>
+          <div
+            class="episode-tray episode-tray--staging"
+            data-episode-tray-drop="1"
+            aria-label="Staging: title card, custom cards, and drops"
+          >
+            <p class="layout-hint episode-tray-hint" style="margin: 0 0 12px">
+              Drag the <strong>title card</strong> (show title and date) onto a page below to include it, or leave it here to skip it in play. Drop other credit cards here to <strong>stage</strong> them — they stay out of play until you put them on a page. Use a blank first page if you want to fade from black into the title or credits.
+            </p>
+            <div id="episode-tray-host" class="episode-tray-dynamic" aria-live="polite"></div>
+            <div class="episode-tray-composer">
+              <p class="episode-tray-slot-label">Custom credit card</p>
+              <p class="episode-tray-composer-hint">
+                Same layout as a role block: a heading plus one line per row. In JSON use
+                <code>"kind": "customCard"</code> on a credit row. Appends to the <strong>last</strong> page — then drag to reorder or stage.
+              </p>
+              <label class="json-label episode-tray-composer-label" for="new-card-role">Heading</label>
+              <input
+                id="new-card-role"
+                type="text"
+                class="remote-input remote-input--wide episode-tray-composer-input"
+                placeholder="e.g. Produced by"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <label class="json-label episode-tray-composer-label" for="new-card-body">Lines (one per line)</label>
+              <textarea
+                id="new-card-body"
+                class="remote-input remote-input--wide episode-tray-composer-input"
+                rows="3"
+                spellcheck="false"
+                placeholder="Name one&#10;Name two"
+              ></textarea>
+              <button
+                type="button"
+                id="btn-add-custom-card"
+                class="btn episode-tray-composer-btn"
+                title="Adds this block as a custom card on the last page"
+              >
+                Add custom card
+              </button>
+            </div>
+          </div>
           <div id="page-strip" class="page-strip page-strip--shared"></div>
           <button type="button" id="btn-add-page" class="btn btn-add-page">Add page</button>
         </section>
