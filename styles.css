@@ -493,6 +493,19 @@ select.remote-input {
   flex-direction: column;
 }
 
+/* Same width as the preview frame below so headings align with the canvas left edge. */
+.workspace-preview-column {
+  width: min(100%, 720px);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.workspace-preview-column--916 {
+  width: min(200px, 36vw);
+}
+
 .workspace-heading {
   margin: 0 0 12px;
   font-size: 15px;
@@ -525,10 +538,6 @@ select.remote-input {
 
 .workspace-heading-inner .workspace-heading {
   flex: 0 0 auto;
-}
-
-.workspace-heading-row--916 {
-  justify-content: center;
 }
 
 .workspace-heading-inner .workspace-heading--916 {
@@ -602,12 +611,6 @@ select.remote-input {
   stroke-linejoin: round;
 }
 
-/* Narrow centered frame: align title with the column center above the preview. */
-.workspace-heading--916 {
-  text-align: center;
-  width: 100%;
-}
-
 .playout-shell {
   display: flex;
   justify-content: center;
@@ -615,7 +618,7 @@ select.remote-input {
 }
 
 .playout-shell--916 .playout-frame {
-  width: min(200px, 36vw);
+  width: 100%;
   max-height: min(72vh, 640px);
 }
 
