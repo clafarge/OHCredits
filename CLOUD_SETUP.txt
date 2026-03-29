@@ -51,7 +51,7 @@ Never commit connection strings or passwords to this repository.
    Troubleshooting — “Requested function was not found” (HTTP 404):
      The function is not deployed to THIS project ref. Common causes:
      - Deployed from the Dashboard into a different Supabase project than the
-       one in editor-config.json / player-config.json.
+       one wired in app.js (DEFAULT_PUBLISH_FUNCTION_URL) / player-config.json.
      - Function name is not exactly publish-credits (hyphen, not underscore).
      - Old deploy: open Edge Functions in the Dashboard and confirm
        publish-credits exists for project uyufnbroqmwjtzvcsosv, then redeploy.
@@ -73,15 +73,11 @@ Never commit connection strings or passwords to this repository.
    for this function; if you use the new sb_publishable_* keys, keep verify_jwt
    off unless Supabase documents otherwise for your project.
 
-   In the OHCredits editor, “Publish function URL” must be the Edge Function
-   invoke URL — NOT the bare “Project URL” from Settings → API.
-   Correct form:
+   The editor posts to a fixed Edge Function URL: `DEFAULT_PUBLISH_FUNCTION_URL`
+   in `app.js` (forks: change it there). Correct shape:
    https://YOUR_REF.supabase.co/functions/v1/publish-credits
 
 4) On your GitHub Pages site (same folder as index.html / player.html):
-
-   - editor-config.json — copy editor-config.example.json and set publishFunctionUrl
-     to your Edge Function invoke URL (…/functions/v1/publish-credits). Commit it.
 
    - player-config.json — copy player-config.example.json and fill in:
      - supabaseUrl: Project Settings → API → Project URL

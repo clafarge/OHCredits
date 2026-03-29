@@ -30,10 +30,7 @@
               hidden
               aria-label="Copy player links"
             >
-              <div class="dropdown-panel-title">Supabase cloud (requires ?event=…)</div>
-              <p class="dropdown-menu-note">
-                Uses the <strong>Event code</strong> from <strong>Cloud settings</strong> (e.g. OfficeHours). Player loads that design from Supabase.
-              </p>
+              <div class="dropdown-panel-title">Supabase cloud (requires Event code)</div>
               <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="event-169">
                 Copy 16:9 player URL with ?event=
               </button>
@@ -124,7 +121,7 @@
 
         <div id="remote-panel" class="json-panel remote-panel hidden" hidden>
           <p class="remote-panel-intro">
-            Event and publish secret for <strong>Publish credits</strong>. The function URL is in <code>editor-config.json</code>. The public player uses <code>player-config.json</code>. See <code>CLOUD_SETUP.txt</code>.
+            Event and publish secret for <strong>Publish credits</strong>. The publish endpoint is fixed for this deployment. The public player uses <code>player-config.json</code>. See <code>CLOUD_SETUP.txt</code>. On <strong>player.html</strong>, optional <code>&amp;hd=1</code> (1080p) or <code>&amp;hd=4k</code> / <code>&amp;scale=2</code> fixes canvas size for vMix; previews here scale with the frame automatically.
           </p>
           <div class="remote-fields">
             <label class="json-label" for="remote-event-preset">Event (quick pick)</label>
@@ -144,16 +141,6 @@
               autocomplete="off"
               spellcheck="false"
             />
-            <label class="json-label">Publish function URL</label>
-            <p class="remote-field-hint">
-              From <code>editor-config.json</code> (<code>publishFunctionUrl</code>). See <code>editor-config.example.json</code>.
-            </p>
-            <p id="remote-editor-config-url" class="remote-editor-config-url" aria-live="polite">
-              Loading editor-config.json…
-            </p>
-            <button type="button" id="btn-reload-editor-config" class="btn btn-reload-editor-config">
-              Reload editor-config.json
-            </button>
             <label class="json-label" for="remote-publish-secret">Publish secret</label>
             <p class="remote-field-hint" id="remote-secret-hint">
               Same as Edge Function secret <code>PUBLISH_SECRET</code>. Saved only in <strong>localStorage</strong> on this device.

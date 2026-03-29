@@ -269,13 +269,6 @@ select.remote-input {
   letter-spacing: 0.04em;
 }
 
-.dropdown-menu-note {
-  margin: 0 14px 8px;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--text-muted);
-}
-
 .dropdown-menu-item {
   display: block;
   width: 100%;
@@ -395,29 +388,6 @@ select.remote-input {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 10px;
-}
-
-.remote-editor-config-url {
-  margin: 0 0 10px;
-  padding: 8px 14px;
-  font-size: 12px;
-  font-family: ui-monospace, monospace;
-  word-break: break-all;
-  line-height: 1.4;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--surface-input);
-  color: #86efac;
-  max-width: 640px;
-}
-
-.remote-editor-config-url.remote-editor-config-url--bad {
-  color: #e0a0a0;
-  border-color: #553333;
-}
-
-.btn-reload-editor-config {
-  margin-bottom: 14px;
 }
 
 .remote-actions {
@@ -560,6 +530,8 @@ select.remote-input {
   height: 100%;
   position: relative;
   background: #0a0a0a;
+  container-type: size;
+  container-name: oh-playout;
 }
 
 .slide-layer {
@@ -568,7 +540,7 @@ select.remote-input {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(12px, 4vw, 48px);
+  padding: clamp(12px, 3.5cqw, 56px);
 }
 
 .slide-content {
@@ -613,7 +585,7 @@ select.remote-input {
 }
 
 .slide-episode-title {
-  font-size: clamp(1.1rem, 2.8vw, 1.6rem);
+  font-size: clamp(1.15rem, 6cqw, 3rem);
   font-weight: 600;
   color: var(--role);
   margin: 0 0 0.2em;
@@ -621,13 +593,13 @@ select.remote-input {
 }
 
 .slide-episode-date {
-  font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+  font-size: clamp(0.95rem, 4.5cqw, 2rem);
   color: var(--name);
   margin: 0;
 }
 
 .slide-role {
-  font-size: 17px;
+  font-size: clamp(15px, 4.5cqw, 2.125rem);
   font-weight: 700;
   color: var(--role);
   margin: 0 0 0.125em;
@@ -640,7 +612,7 @@ select.remote-input {
   margin: 0;
   padding: 0;
   color: var(--name);
-  font-size: 17px;
+  font-size: clamp(14px, 4.2cqw, 2rem);
   font-weight: 700;
   line-height: 1.35;
 }
@@ -654,17 +626,17 @@ select.remote-input {
   font-style: italic;
 }
 
-/* 9:16 playout: 13px credits (vs 17px on 16:9); tighter side padding for more line width */
+/* 9:16 playout: width is narrow — scale type with container height (cqh) */
 .frame-9-16 .slide-layer {
-  padding: clamp(10px, 3vw, 36px) clamp(6px, 1.2vw, 14px);
+  padding: clamp(10px, 3.5cqh, 48px) clamp(6px, 2.2cqw, 20px);
 }
 
 .frame-9-16 .slide-role {
-  font-size: 13px;
+  font-size: clamp(12px, 4.2cqh, 1.75rem);
 }
 
 .frame-9-16 .slide-people {
-  font-size: 13px;
+  font-size: clamp(11px, 4cqh, 1.65rem);
   line-height: 1.35;
 }
 
@@ -673,15 +645,15 @@ select.remote-input {
 }
 
 .frame-9-16 .slide-episode-title {
-  font-size: clamp(0.88rem, 2vw, 1.22rem);
+  font-size: clamp(1rem, 5.5cqh, 2.5rem);
 }
 
 .frame-9-16 .slide-episode-date {
-  font-size: clamp(0.72rem, 1.65vw, 0.92rem);
+  font-size: clamp(0.85rem, 4cqh, 1.75rem);
 }
 
 .frame-9-16 .slide-empty {
-  font-size: 11px;
+  font-size: clamp(11px, 3.2cqh, 1rem);
 }
 
 .episode-tray--staging {
@@ -1090,6 +1062,8 @@ select.remote-input {
   padding: 10px 12px;
   overflow: auto;
   text-align: center;
+  container-type: size;
+  container-name: oh-organizer;
 }
 
 .page-box-inner--overflow {

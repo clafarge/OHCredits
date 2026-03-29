@@ -17,6 +17,10 @@
   /** Shown in the Event quick-pick until you save your own list. */
   const DEFAULT_EVENT_PRESETS = ["OfficeHours"];
 
+  /** Supabase Edge Function for Publish credits (this repo’s project). */
+  const DEFAULT_PUBLISH_FUNCTION_URL =
+    "https://uyufnbroqmwjtzvcsosv.supabase.co/functions/v1/publish-credits";
+
   /** Panelists share page 1 with Host/Reader when total panelist names are 0–6 (fewer than 7). */
   const PANELISTS_MERGE_ON_PAGE1_MAX = 6;
 
@@ -118,8 +122,6 @@
     remotePanel: document.getElementById("remote-panel"),
     remoteEventPreset: document.getElementById("remote-event-preset"),
     remoteEvent: document.getElementById("remote-event"),
-    remoteEditorConfigUrl: document.getElementById("remote-editor-config-url"),
-    btnReloadEditorConfig: document.getElementById("btn-reload-editor-config"),
     remotePublishSecret: document.getElementById("remote-publish-secret"),
     btnTogglePublishSecret: document.getElementById("btn-toggle-publish-secret"),
     jsonUrlInput: document.getElementById("json-url-input"),
@@ -143,9 +145,6 @@
   let parkedIds = [];
 
   let playAbort = null;
-
-  /** Publish endpoint from editor-config.json (in-memory after fetch). */
-  let editorPublishFunctionUrl = "";
 
   /** Cached supabaseAnonKey from player-config.json (same origin as the editor). */
   let playerConfigAnonKeyCache = null;
@@ -299,36 +298,6 @@
     } else {
       sel.value = "";
     }
-  }
-
-  function updateEditorConfigDisplay() {
-    const el = els.remoteEditorConfigUrl;
-    if (!el) return;
-    el.classList.remove("remote-editor-config-url--bad");
-    if (!editorPublishFunctionUrl) {
-      el.textContent =
-        "No publishFunctionUrl — add editor-config.json next to index.html (see editor-config.example.json).";
-      el.classList.add("remote-editor-config-url--bad");
-      return;
-    }
-    el.textContent = editorPublishFunctionUrl;
-  }
-
-  async function loadEditorConfig() {
-    editorPublishFunctionUrl = "";
-    try {
-      const res = await fetch(new URL("editor-config.json", window.location.href), { cache: "no-store" });
-      if (!res.ok) {
-        updateEditorConfigDisplay();
-        return;
-      }
-      const j = await res.json();
-      const url = typeof j.publishFunctionUrl === "string" ? j.publishFunctionUrl.trim() : "";
-      if (url) editorPublishFunctionUrl = url;
-    } catch {
-      /* file missing or invalid */
-    }
-    updateEditorConfigDisplay();
   }
 
   function loadRemoteFields() {
@@ -1169,7 +1138,6 @@
     if (els.btnPublishCredits) els.btnPublishCredits.disabled = playing;
     if (els.btnMenuLinks) els.btnMenuLinks.disabled = playing;
     if (els.btnTogglePublishSecret) els.btnTogglePublishSecret.disabled = playing;
-    if (els.btnReloadEditorConfig) els.btnReloadEditorConfig.disabled = playing;
     if (els.btnLoadJsonUrl) els.btnLoadJsonUrl.disabled = playing;
     if (els.btnAddCustomCard) els.btnAddCustomCard.disabled = playing;
     if (els.newCardRole) els.newCardRole.disabled = playing;
@@ -1275,14 +1243,7 @@
       setToolbarPublishStatus("Event code: 1–64 chars — letters, numbers, hyphens, underscores.", "error");
       return;
     }
-    if (!editorPublishFunctionUrl) {
-      await loadEditorConfig();
-    }
-    const fnRaw = editorPublishFunctionUrl;
-    if (!fnRaw) {
-      setToolbarPublishStatus("Missing publishFunctionUrl in editor-config.json.", "error");
-      return;
-    }
+    const fnRaw = DEFAULT_PUBLISH_FUNCTION_URL;
     if (!sec) {
       setToolbarPublishStatus("Enter publish secret (Cloud settings) — saved only in this browser.", "error");
       return;
@@ -1290,7 +1251,7 @@
 
     const resolved = resolvePublishFunctionUrl(fnRaw);
     if (!resolved.url) {
-      setToolbarPublishStatus(resolved.hint || "Invalid publishFunctionUrl in editor-config.json.", "error");
+      setToolbarPublishStatus(resolved.hint || "Invalid publish endpoint URL.", "error");
       return;
     }
     const fn = resolved.url;
@@ -1341,12 +1302,7 @@
       return;
     }
     rememberRemoteEventCode(code);
-    const autoFixNote = resolved.hint ? `${resolved.hint} ` : "";
-    const qs169 = new URLSearchParams({ event: code, view: "16x9" }).toString();
-    setToolbarPublishStatus(
-      `${autoFixNote}Published “${code}”. Cloud URLs use ?${qs169} (9:16: view=9x16). player-config.json must be on the player site.`,
-      "ok"
-    );
+    setToolbarPublishStatus(`Published “${code}”.`, "ok");
   }
 
   /**
@@ -1635,14 +1591,7 @@
       els.toggleRemote.setAttribute("aria-expanded", String(isHidden));
       if (isHidden) {
         loadRemoteFields();
-        void loadEditorConfig();
       }
-    });
-  }
-
-  if (els.btnReloadEditorConfig) {
-    els.btnReloadEditorConfig.addEventListener("click", () => {
-      void loadEditorConfig();
     });
   }
 
@@ -1878,7 +1827,6 @@
   }
 
   void (async function boot() {
-    await loadEditorConfig();
     loadRemoteFields();
     syncStoredEventIntoQuickPick();
     renderPlayoutEmpty();
