@@ -24,49 +24,6 @@
   const PANELISTS_MERGE_ON_PAGE1_MAX = 6;
 
   /**
-   * First-load credits template. `_designerPageHint: "starter-v2"` (recommended): semantic pages —
-   * Host + Reader on page 1; Panelists on page 1 only if fewer than 7 names, else their own page;
-   * Contributors (height-paginated); short roles (1–2 names each) grouped ~3 roles per page (balanced
-   * so we avoid e.g. 4+2 when 3+3 is possible); larger groups near the end;
-   * "Special thanks" last. `starter-v1` keeps the older index-based layout.
-   */
-  const DEFAULT_CREDITS_JSON = `{
-  "_designerPageHint": "starter-v2",
-  "episode": {
-    "title": "Your show title",
-    "date": "Episode date"
-  },
-  "credits": [
-    { "role": "Host", "people": ["Name"] },
-    { "role": "Reader", "people": ["Name"] },
-    { "role": "Panelists", "people": ["One", "Two", "Three", "Four", "Five"] },
-    {
-      "role": "Contributors",
-      "people": [
-        "Add many names here — this block follows Panelists",
-        "Alex Kim", "Jordan Lee", "Sam Rivera", "Taylor Chen", "Riley Patel",
-        "Casey Wu", "Morgan Diaz", "Jamie Ortiz", "Quinn Brooks", "Avery Ng",
-        "Blake Fox", "Cameron Shah", "Drew Cole", "Emery Park", "Finley Gray"
-      ]
-    },
-    { "role": "Executive producer", "people": ["Name"] },
-    { "role": "Producer", "people": ["Name"] },
-    { "role": "Director", "people": ["Name"] },
-    { "role": "Senior producer", "people": ["Name"] },
-    { "role": "Line producer", "people": ["Name"] },
-    { "role": "Editor", "people": ["Name"] },
-    {
-      "role": "Production team",
-      "people": [
-        "Larger non-panel groups land toward the end",
-        "Rae Santos", "Indigo Moore", "Sky Patel", "Ocean Cruz"
-      ]
-    },
-    { "role": "Special thanks", "people": ["Community", "Sponsors", "Volunteers"] }
-  ]
-}`;
-
-  /**
    * Usable vertical space (px) per page at playout scale — tuned so ~3 simple credits
    * (role + one short name each) fit comfortably in both formats; 9:16 gets more room
    * because the portrait frame is taller. Organizer box height is aligned to 16:9 budget.
@@ -913,7 +870,7 @@
       return;
     }
     els.jsonInput.value = text;
-    addJsonFromText(text, setJsonStatus);
+    setJsonStatus("Loaded from URL into the box — click Add JSON to apply (or merge if a layout already exists).", "ok");
   }
 
   function renderPlayoutEmpty() {
@@ -1912,12 +1869,7 @@
     await loadEditorConfig();
     loadRemoteFields();
     syncStoredEventIntoQuickPick();
-    if (els.jsonInput && !els.jsonInput.value.trim()) {
-      els.jsonInput.value = DEFAULT_CREDITS_JSON;
-      addJsonFromText(DEFAULT_CREDITS_JSON, setJsonStatus);
-    } else {
-      renderPlayoutEmpty();
-      renderPageStrip();
-    }
+    renderPlayoutEmpty();
+    renderPageStrip();
   })();
 })();

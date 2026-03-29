@@ -6,12 +6,6 @@
     <title>OHCredits</title>
     <link rel="icon" type="image/png" sizes="32x32" href="favicon.png" />
     <link rel="apple-touch-icon" href="favicon.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -93,7 +87,7 @@
         <div id="json-panel" class="json-panel hidden" hidden>
           <label class="json-label" for="json-url-input">Role / credits JSON URL</label>
           <p class="json-url-hint">
-            Fetch credits JSON from a URL (same site or CORS-enabled). Loaded text replaces the box below and runs the same steps as <strong>Add JSON</strong> (merge if you already have credits).
+            Fetch credits JSON from a URL (same site or CORS-enabled). Loaded text replaces the box below — then use <strong>Add JSON</strong> to apply it (merge if you already have a layout).
           </p>
           <div class="json-url-row">
             <input
@@ -111,7 +105,7 @@
             id="json-input"
             rows="12"
             spellcheck="false"
-            placeholder='Starter loads on first visit. Add JSON merges new credits after existing pages when you already have a layout; use Clear for a fresh start.'
+            placeholder="Paste episode + credits JSON, then Add JSON to build pages. Add JSON merges after existing pages when you already have a layout. Clear removes the design and this box."
           ></textarea>
           <div class="json-actions">
             <button

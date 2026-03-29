@@ -1,12 +1,26 @@
+/*
+ * Palette aligned with Office Hours Global (Thesis Focus skin):
+ * https://officehours.global/ — body #272729 / #1d1c20, text #f7f7f7, links #ccf1ff, action #12a7ff
+ */
 :root {
-  --bg: #000000;
-  --role: #3d83c6;
-  --name: #aaaaaa;
-  --toolbar-bg: #111;
-  --border: #333;
-  --accent: #3d83c6;
+  --bg: #272729;
+  --surface: #1d1c20;
+  --surface-input: #151418;
+  --toolbar-bg: #252729;
+  --role: #ccf1ff;
+  --name: #a3a3a3;
+  --text: #f7f7f7;
+  --text-muted: #a3a3a3;
+  --link: #ccf1ff;
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #12a7ff;
+  --accent-hover: #38b5ff;
+  --btn-secondary-bg: #ccf1ff;
+  --btn-secondary-text: #545454;
+  --btn-secondary-hover: #f2fbff;
   --font-size: 17px;
-  --font: "Barlow", system-ui, sans-serif;
+  --font: system-ui, BlinkMacSystemFont, Roboto, "Segoe UI", Segoe, "Helvetica Neue", Tahoma, sans-serif;
+  --line-height-body: 1.706; /* ~29px at 17px, matches OHG Focus */
 }
 
 *,
@@ -24,8 +38,9 @@ body {
 body {
   font-family: var(--font);
   font-size: var(--font-size);
+  line-height: var(--line-height-body);
   background: var(--bg);
-  color: var(--name);
+  color: var(--text);
 }
 
 .sr-only {
@@ -74,17 +89,20 @@ body {
 .btn {
   font-family: inherit;
   font-size: 14px;
-  padding: 8px 14px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #222;
-  color: #e0e0e0;
+  font-weight: 500;
+  padding: 10px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-bottom-width: 3px;
+  border-bottom-color: rgba(0, 0, 0, 0.28);
+  border-radius: 11px;
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
   cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.15s ease;
 }
 
 .btn:hover:not(:disabled) {
-  border-color: #555;
-  background: #2a2a2a;
+  background: var(--btn-secondary-hover);
 }
 
 .btn:disabled {
@@ -93,37 +111,38 @@ body {
 }
 
 .btn.primary {
-  background: #1a3a52;
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--accent);
+  border-color: rgba(0, 0, 0, 0.12);
+  border-bottom-color: rgba(0, 0, 0, 0.35);
+  color: #1a1a1a;
 }
 
 .btn.primary:hover:not(:disabled) {
-  background: #224a68;
+  background: var(--accent-hover);
 }
 
 /* Paste credits JSON: looks “on” while the panel is open (close again for less clutter). */
 #btn-toggle-json[aria-expanded="true"] {
-  background: #1e3350;
+  background: rgba(18, 167, 255, 0.18);
   border-color: var(--accent);
-  color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(61, 131, 198, 0.35);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(18, 167, 255, 0.35);
 }
 
 #btn-toggle-json[aria-expanded="true"]:hover:not(:disabled) {
-  background: #264a6e;
+  background: rgba(18, 167, 255, 0.26);
 }
 
 /* Cloud settings: same “on” treatment while the panel is open. */
 #btn-toggle-remote[aria-expanded="true"] {
-  background: #1e3350;
+  background: rgba(18, 167, 255, 0.18);
   border-color: var(--accent);
-  color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(61, 131, 198, 0.35);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(18, 167, 255, 0.35);
 }
 
 #btn-toggle-remote[aria-expanded="true"]:hover:not(:disabled) {
-  background: #264a6e;
+  background: rgba(18, 167, 255, 0.26);
 }
 
 .btn-add-page {
@@ -144,7 +163,7 @@ body {
 .remote-panel-intro {
   margin: 0 0 12px;
   font-size: 13px;
-  color: #aaa;
+  color: var(--text-muted);
   line-height: 1.45;
   max-width: 720px;
 }
@@ -152,14 +171,14 @@ body {
 .remote-field-hint {
   margin: -4px 0 6px;
   font-size: 12px;
-  color: #777;
+  color: var(--text-muted);
   line-height: 1.4;
   max-width: 560px;
 }
 
 .remote-field-hint code {
   font-size: 11px;
-  color: #999;
+  color: #c5c5c5;
 }
 
 .remote-fields {
@@ -175,10 +194,10 @@ body {
   width: 100%;
   max-width: 360px;
   padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid #3a3a3a;
-  background: #141414;
-  color: #e8e8e8;
+  border-radius: 7px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  background: var(--surface-input);
+  color: var(--text);
   font-family: inherit;
   font-size: 14px;
 }
@@ -233,7 +252,7 @@ select.remote-input {
   min-width: 300px;
   z-index: 100;
   padding: 6px 0 10px;
-  background: #161616;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
@@ -247,7 +266,7 @@ select.remote-input {
   padding: 8px 14px 4px;
   font-size: 11px;
   font-weight: 600;
-  color: #666;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -261,12 +280,12 @@ select.remote-input {
   background: transparent;
   font: inherit;
   font-size: 13px;
-  color: #ddd;
+  color: var(--text);
   cursor: pointer;
 }
 
 .dropdown-menu-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(204, 241, 255, 0.08);
 }
 
 .dropdown-menu-status {
@@ -274,7 +293,7 @@ select.remote-input {
   font-size: 12px;
   line-height: 1.35;
   min-height: 1.35em;
-  color: #777;
+  color: var(--text-muted);
 }
 
 .dropdown-menu-status.ok {
@@ -288,9 +307,25 @@ select.remote-input {
 .json-url-hint {
   margin: -4px 0 8px;
   font-size: 12px;
-  color: #777;
+  color: var(--text-muted);
   line-height: 1.4;
   max-width: 720px;
+}
+
+.json-url-hint a,
+.layout-hint a,
+.episode-tray-composer-hint a {
+  color: var(--link);
+  text-decoration: underline;
+}
+
+.layout-hint code,
+.json-url-hint code,
+.episode-tray-composer-hint code {
+  font-size: 0.92em;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 2px 6px;
+  border-radius: 6px;
 }
 
 .json-url-row {
@@ -306,10 +341,10 @@ select.remote-input {
   flex: 1;
   min-width: 200px;
   padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid #3a3a3a;
-  background: #141414;
-  color: #e8e8e8;
+  border-radius: 7px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  background: var(--surface-input);
+  color: var(--text);
   font-family: inherit;
   font-size: 14px;
 }
@@ -338,8 +373,8 @@ select.remote-input {
   margin: 16px 0 12px;
   padding: 14px 16px;
   border-radius: 8px;
-  border: 1px solid #333;
-  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  background: var(--surface);
   max-width: 640px;
 }
 
@@ -347,7 +382,7 @@ select.remote-input {
   margin: 0 0 6px;
   font-size: 14px;
   font-weight: 600;
-  color: #ddd;
+  color: var(--text);
 }
 
 .remote-player-links-buttons {
@@ -364,9 +399,9 @@ select.remote-input {
   font-family: ui-monospace, monospace;
   word-break: break-all;
   line-height: 1.4;
-  border-radius: 6px;
-  border: 1px solid #333;
-  background: #101010;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface-input);
   color: #9ad29a;
   max-width: 640px;
 }
@@ -389,21 +424,21 @@ select.remote-input {
 .json-label {
   display: block;
   margin-bottom: 8px;
-  color: #ccc;
+  color: var(--text);
   font-size: 14px;
 }
 
 #json-input {
   width: 100%;
   max-width: 960px;
-  font-family: ui-monospace, "Cascadia Code", monospace;
+  font-family: ui-monospace, Menlo, Consolas, Monaco, monospace;
   font-size: 13px;
   line-height: 1.45;
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid var(--border);
-  background: #0d0d0d;
-  color: #ddd;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  background: var(--surface-input);
+  color: var(--text);
   resize: vertical;
   min-height: 180px;
 }
@@ -418,7 +453,7 @@ select.remote-input {
 
 .json-status {
   font-size: 13px;
-  color: #888;
+  color: var(--text-muted);
 }
 
 .json-status.error {
@@ -446,7 +481,7 @@ select.remote-input {
 .layout-hint {
   margin: 0 0 14px;
   font-size: 13px;
-  color: #888;
+  color: var(--text-muted);
   line-height: 1.45;
   max-width: 52rem;
 }
@@ -477,7 +512,7 @@ select.remote-input {
   margin: 0 0 12px;
   font-size: 15px;
   font-weight: 600;
-  color: #ccc;
+  color: var(--text);
   letter-spacing: 0.02em;
 }
 
@@ -501,11 +536,11 @@ select.remote-input {
 .frame {
   width: 100%;
   max-width: min(100%, 720px);
-  background: #000;
-  border: 1px solid #2a2a2a;
+  background: #050505;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
 }
 
 .frame-16-9 {
@@ -520,7 +555,7 @@ select.remote-input {
   width: 100%;
   height: 100%;
   position: relative;
-  background: var(--bg);
+  background: #050505;
 }
 
 .slide-layer {
@@ -611,7 +646,7 @@ select.remote-input {
 }
 
 .slide-empty {
-  color: #666;
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -652,8 +687,8 @@ select.remote-input {
 .episode-tray {
   padding: 12px 14px;
   border-radius: 8px;
-  border: 1px dashed #444;
-  background: #0d0d0d;
+  border: 1px dashed rgba(204, 241, 255, 0.22);
+  background: var(--surface);
   max-width: 52rem;
 }
 
@@ -668,7 +703,7 @@ select.remote-input {
 .episode-tray-composer {
   margin-top: 12px;
   padding-top: 14px;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--border);
   max-width: 36rem;
 }
 
@@ -676,7 +711,7 @@ select.remote-input {
   margin: 0 0 10px;
   font-size: 12px;
   line-height: 1.45;
-  color: #9a9a9a;
+  color: var(--text-muted);
 }
 
 .episode-tray-composer-label {
@@ -696,22 +731,22 @@ select.remote-input {
 }
 
 .page-box--organizer .credit-draggable--title-card {
-  border-color: rgba(100, 140, 200, 0.28);
+  border-color: rgba(204, 241, 255, 0.28);
 }
 
 .page-box--organizer .credit-draggable--title-card:hover {
-  border-color: rgba(120, 160, 220, 0.45);
+  border-color: rgba(204, 241, 255, 0.45);
 }
 
 .episode-tray.episode-tray--drop-target {
   border-color: var(--accent);
-  background: rgba(61, 131, 198, 0.08);
+  background: rgba(18, 167, 255, 0.1);
 }
 
 .episode-tray-sink-msg {
   margin: 0;
   font-size: 13px;
-  color: #aaa;
+  color: var(--text-muted);
   line-height: 1.45;
 }
 
@@ -719,7 +754,7 @@ select.remote-input {
   margin: 0 0 4px;
   font-size: 12px;
   font-weight: 600;
-  color: #888;
+  color: var(--text-muted);
   letter-spacing: 0.02em;
 }
 
@@ -763,12 +798,12 @@ select.remote-input {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #555;
+  color: var(--text-muted);
   writing-mode: vertical-rl;
   text-orientation: mixed;
-  border: 1px dashed #333;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
   border-radius: 8px;
-  background: #0a0a0a;
+  background: var(--surface);
   cursor: default;
   user-select: none;
 }
@@ -776,7 +811,7 @@ select.remote-input {
 .page-strip-end-drop.page-box--page-drop-target {
   color: var(--accent);
   border-color: var(--accent);
-  background: rgba(61, 131, 198, 0.12);
+  background: rgba(18, 167, 255, 0.12);
 }
 
 .page-box {
@@ -784,9 +819,9 @@ select.remote-input {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  border: 1px solid #3a3a3a;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #0a0a0a;
+  background: var(--surface);
   overflow: hidden;
 }
 
@@ -877,8 +912,8 @@ select.remote-input {
   gap: 4px;
   padding: 6px 8px;
   font-size: 11px;
-  color: #9a9a9a;
-  background: #161616;
+  color: var(--text-muted);
+  background: #252529;
   border-bottom: 1px solid var(--border);
 }
 
@@ -902,14 +937,14 @@ select.remote-input {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: #777;
+  color: var(--text-muted);
   cursor: grab;
   font: inherit;
 }
 
 .page-box-drag-handle:hover {
-  color: #bbb;
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--link);
+  background: rgba(204, 241, 255, 0.08);
 }
 
 .page-box-drag-handle:active {
@@ -956,7 +991,7 @@ select.remote-input {
 
 .page-box-title {
   font-weight: 600;
-  color: #bbb;
+  color: var(--text);
   min-width: 0;
 }
 
@@ -1060,8 +1095,8 @@ select.remote-input {
 }
 
 .credit-draggable:hover {
-  border-color: #444;
-  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(204, 241, 255, 0.2);
+  background: rgba(204, 241, 255, 0.04);
 }
 
 .credit-draggable:active {
@@ -1078,21 +1113,21 @@ select.remote-input {
   align-items: center;
   justify-content: center;
   font-size: 11px;
-  color: #555;
-  border-top: 1px dashed #333;
+  color: var(--text-muted);
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
   padding: 6px;
 }
 
 .page-box-drop-zone.page-box-drop-target {
   color: var(--accent);
-  background: rgba(61, 131, 198, 0.12);
+  background: rgba(18, 167, 255, 0.12);
 }
 
 /* Standalone third-party player (player.html) */
 .player-body {
   margin: 0;
   min-height: 100vh;
-  background: #000;
+  background: var(--bg);
 }
 
 .player-shell {
