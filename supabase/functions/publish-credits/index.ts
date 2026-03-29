@@ -8,8 +8,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 // Match https://supabase.com/docs/guides/functions/cors (browser preflight).
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
+  // Browser preflight must list every request header the editor sends (case-insensitive names).
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-ohcredits-publish-secret, x-requested-with",
+    "authorization, x-client-info, apikey, content-type, x-ohcredits-publish-secret, x-requested-with, accept, accept-encoding, prefer, origin",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Max-Age": "86400",
 };

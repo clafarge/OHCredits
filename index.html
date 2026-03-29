@@ -30,21 +30,17 @@
               hidden
               aria-label="Copy player links"
             >
-              <div class="dropdown-panel-title">Cloud (?event)</div>
+              <div class="dropdown-panel-title">Supabase cloud (requires ?event=…)</div>
+              <p class="dropdown-menu-note">
+                Uses the <strong>Event code</strong> from <strong>Cloud settings</strong> (e.g. OfficeHours). Player loads that design from Supabase.
+              </p>
               <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="event-169">
-                Copy 16:9 player URL
+                Copy 16:9 player URL with ?event=
               </button>
               <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="event-916">
-                Copy 9:16 player URL
+                Copy 9:16 player URL with ?event=
               </button>
-              <div class="dropdown-panel-title">Same site (JSON file)</div>
-              <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="json-169">
-                Copy 16:9 URL (ohcredits-design.json)
-              </button>
-              <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="json-916">
-                Copy 9:16 URL (ohcredits-design.json)
-              </button>
-              <div class="dropdown-panel-title">Embedded in URL</div>
+              <div class="dropdown-panel-title">Embedded in URL (no cloud)</div>
               <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="hash-169">
                 Copy 16:9 link (full layout in URL)
               </button>
@@ -76,8 +72,6 @@
           <button type="button" id="btn-preview" class="btn">Preview first slide</button>
           <button type="button" id="btn-play-both" class="btn">Play both</button>
           <button type="button" id="btn-stop" class="btn" disabled>Stop</button>
-          <button type="button" id="btn-export-design-json" class="btn">Save design JSON</button>
-
           <div class="toolbar-end" aria-label="Publish to cloud">
             <span id="toolbar-publish-status" class="json-status toolbar-inline-status" role="status"></span>
             <button type="button" id="btn-publish-credits" class="btn primary">Publish credits</button>

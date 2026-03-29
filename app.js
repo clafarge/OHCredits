@@ -7,9 +7,6 @@
   const EPISODE_ID = OH.EPISODE_ID;
   const PEOPLE_MAX_PER_GROUP = OH.PEOPLE_MAX_PER_GROUP;
 
-  /** Commit this file next to `player.html` for short player URLs (`?url=…`). */
-  const EXPORT_DESIGN_FILENAME = "ohcredits-design.json";
-
   const LS_REMOTE_EVENT = "ohcredits_remote_event";
   /** @deprecated removed from UI; clear if present */
   const LS_REMOTE_FN_LEGACY = "ohcredits_remote_function_url";
@@ -111,7 +108,6 @@
     btnPlayBoth: document.getElementById("btn-play-both"),
     btnStop: document.getElementById("btn-stop"),
     btnAddPage: document.getElementById("btn-add-page"),
-    btnExportDesignJson: document.getElementById("btn-export-design-json"),
     btnPublishCredits: document.getElementById("btn-publish-credits"),
     toolbarPublishStatus: document.getElementById("toolbar-publish-status"),
     btnMenuLinks: document.getElementById("btn-menu-links"),
@@ -995,7 +991,7 @@
     const role = (els.newCardRole && els.newCardRole.value.trim()) || "Card";
     const raw = (els.newCardBody && els.newCardBody.value.trim()) || "";
     let people = raw.split(/\n/).map((l) => l.trim()).filter(Boolean);
-    if (people.length === 0) people = ["New card — add lines via JSON export or merge."];
+    if (people.length === 0) people = ["New card — add lines via design JSON or merge."];
     const row = nextCreditRowBaseIndex();
     const id = `c-${row}-0`;
     itemsById.set(id, { role, people, kind: "customCard" });
@@ -1169,7 +1165,6 @@
     els.toggleJson.disabled = playing;
     if (els.btnAddJson) els.btnAddJson.disabled = playing;
     if (els.btnClearJson) els.btnClearJson.disabled = playing;
-    if (els.btnExportDesignJson) els.btnExportDesignJson.disabled = playing;
     if (els.toggleRemote) els.toggleRemote.disabled = playing;
     if (els.btnPublishCredits) els.btnPublishCredits.disabled = playing;
     if (els.btnMenuLinks) els.btnMenuLinks.disabled = playing;
@@ -1200,13 +1195,6 @@
     return u.href;
   }
 
-  function playerUrlForJsonFile(viewParam) {
-    const u = new URL("player.html", window.location.href);
-    u.searchParams.set("view", viewParam);
-    u.searchParams.set("url", EXPORT_DESIGN_FILENAME);
-    return u.href;
-  }
-
   /**
    * @param {(msg: string, kind?: string) => void} report
    */
@@ -1222,61 +1210,6 @@
     } else {
       r("Copy failed — try HTTPS/localhost or copy the URL manually.", "error");
     }
-  }
-
-  /**
-   * @param {(msg: string, kind?: string) => void} report
-   */
-  async function copyPlayerFileLink(viewParam, label, report) {
-    const r = report || setJsonStatus;
-    if (itemsById.size === 0 && !episodeHtml) {
-      r("Add JSON and arrange pages before copying a player link.", "error");
-      return;
-    }
-    const ok = await copyTextToClipboard(playerUrlForJsonFile(viewParam));
-    if (ok) {
-      r(`Copied ${label} URL (${EXPORT_DESIGN_FILENAME} next to player.html).`, "ok");
-    } else {
-      r("Copy failed — try HTTPS/localhost or copy manually.", "error");
-    }
-  }
-
-  async function exportDesignJson() {
-    if (itemsById.size === 0 && !episodeHtml) {
-      setJsonStatus("Nothing to export — add JSON and arrange pages first.", "error");
-      return;
-    }
-    const json = JSON.stringify(designStateForShare(), null, 2);
-    if (window.showSaveFilePicker && window.FileSystemWritableFileStream) {
-      try {
-        const handle = await window.showSaveFilePicker({
-          suggestedName: EXPORT_DESIGN_FILENAME,
-          types: [
-            {
-              description: "OHCredits design",
-              accept: { "application/json": [".json"] },
-            },
-          ],
-        });
-        const writable = await handle.createWritable();
-        await writable.write(json);
-        await writable.close();
-        setJsonStatus(`Saved — commit this file with your site so player ?url= links work.`, "ok");
-        return;
-      } catch (e) {
-        if (e && e.name === "AbortError") return;
-      }
-    }
-    const blob = new Blob([json], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = EXPORT_DESIGN_FILENAME;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    setJsonStatus(
-      `Downloaded ${EXPORT_DESIGN_FILENAME} — move it into your GitHub project next to player.html and commit.`,
-      "ok"
-    );
   }
 
   /**
@@ -1329,6 +1262,13 @@
       setToolbarPublishStatus("Add JSON and arrange pages before publishing.", "error");
       return;
     }
+    if (window.location.protocol === "file:") {
+      setToolbarPublishStatus(
+        "Editor opened as file:// — publish cannot reach Supabase. Use http://localhost or your HTTPS site (GitHub Pages).",
+        "error"
+      );
+      return;
+    }
     const code = els.remoteEvent ? els.remoteEvent.value.trim() : "";
     const sec = els.remotePublishSecret ? els.remotePublishSecret.value.trim() : "";
     if (!validateEventSlug(code)) {
@@ -1372,6 +1312,8 @@
     try {
       res = await fetch(fn, {
         method: "POST",
+        mode: "cors",
+        cache: "no-store",
         headers,
         body: JSON.stringify({
           event_code: code,
@@ -1380,10 +1322,11 @@
       });
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
-      setToolbarPublishStatus(
-        `Request failed (${detail}). Check Edge Function URL and deployment; see Network tab.`,
-        "error"
-      );
+      const hint =
+        detail === "Failed to fetch"
+          ? " (browser blocked the request: open DevTools → Network, confirm the function URL; redeploy publish-credits with CORS; avoid file://; check ad blockers.)"
+          : "";
+      setToolbarPublishStatus(`Request failed (${detail}).${hint}`, "error");
       return;
     }
     let data = null;
@@ -1399,8 +1342,9 @@
     }
     rememberRemoteEventCode(code);
     const autoFixNote = resolved.hint ? `${resolved.hint} ` : "";
+    const qs169 = new URLSearchParams({ event: code, view: "16x9" }).toString();
     setToolbarPublishStatus(
-      `${autoFixNote}Published “${code}”. player-config.json must be on your site for ?event links.`,
+      `${autoFixNote}Published “${code}”. Cloud URLs use ?${qs169} (9:16: view=9x16). player-config.json must be on the player site.`,
       "ok"
     );
   }
@@ -1422,7 +1366,7 @@
     u.searchParams.set("event", code);
     const ok = await copyTextToClipboard(u.href);
     if (ok) {
-      report(`Copied ${label} player URL (?event=${code}).`, "ok");
+      report(`Copied ${label} — ${u.pathname}${u.search}`, "ok");
     } else {
       report("Copy failed — try HTTPS/localhost.", "error");
     }
@@ -1756,12 +1700,6 @@
           case "event-916":
             await copyPlayerEventUrl("9x16", "9:16", setLinksMenuStatus);
             break;
-          case "json-169":
-            await copyPlayerFileLink("16x9", "16:9", setLinksMenuStatus);
-            break;
-          case "json-916":
-            await copyPlayerFileLink("9x16", "9:16", setLinksMenuStatus);
-            break;
           case "hash-169":
             await copyPlayerLink("16x9", "16:9", setLinksMenuStatus);
             break;
@@ -1831,12 +1769,6 @@
   els.btnStop.addEventListener("click", stopPlayout);
 
   els.btnAddPage.addEventListener("click", addEmptyPage);
-
-  if (els.btnExportDesignJson) {
-    els.btnExportDesignJson.addEventListener("click", () => {
-      void exportDesignJson();
-    });
-  }
 
   if (els.btnLoadJsonUrl) {
     els.btnLoadJsonUrl.addEventListener("click", () => {

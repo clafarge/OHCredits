@@ -139,6 +139,41 @@
     rawView === "vertical" ||
     rawView === "portrait";
 
+  /**
+   * Fixed “broadcast” canvas: avoids vw/rem caps that stay tiny on large displays.
+   * - hd=1|1080|1080p → 1920×1080 (or 1080×1920 vertical)
+   * - hd=4k|2160|uhd or output=2160 or scale=2|200 → 3840×2160 (or 2160×3840)
+   * scale: use 2 (or 200 meaning 200%) for 4K vs the 1080p baseline.
+   * @returns {"1080" | "4k" | null}
+   */
+  function parseBroadcastTier(p) {
+    const h = (p.get("hd") || "").toLowerCase().trim();
+    const o = (p.get("output") || "").toLowerCase().trim();
+    const scaleStr = (p.get("scale") || "").trim();
+    let scaleFactor = NaN;
+    if (scaleStr) {
+      const n = parseFloat(scaleStr);
+      if (!Number.isNaN(n)) {
+        scaleFactor = n > 10 ? n / 100 : n;
+      }
+    }
+    const fourK =
+      ["4k", "2160", "uhd", "3840"].includes(h) ||
+      ["4k", "2160", "uhd", "3840"].includes(o) ||
+      scaleFactor >= 1.9;
+    if (fourK) return "4k";
+    const tenEighty =
+      h === "1" ||
+      h === "true" ||
+      h === "1080" ||
+      h === "1080p" ||
+      o === "1080";
+    if (tenEighty) return "1080";
+    return null;
+  }
+
+  const broadcastTier = parseBroadcastTier(params);
+
   shell.classList.remove("player-shell--169", "player-shell--916");
   frame.classList.remove("frame-16-9", "frame-9-16");
   if (is916) {
@@ -147,6 +182,28 @@
   } else {
     shell.classList.add("player-shell--169");
     frame.classList.add("frame-16-9");
+  }
+
+  if (broadcastTier === "1080") {
+    document.body.classList.add("player-body--hd1080");
+    if (is916) document.body.classList.add("player-body--hd1080-vertical");
+    const mv = document.querySelector('meta[name="viewport"]');
+    if (mv) {
+      mv.setAttribute(
+        "content",
+        is916 ? "width=1080, height=1920, initial-scale=1" : "width=1920, initial-scale=1"
+      );
+    }
+  } else if (broadcastTier === "4k") {
+    document.body.classList.add("player-body--hd4k");
+    if (is916) document.body.classList.add("player-body--hd4k-vertical");
+    const mv = document.querySelector('meta[name="viewport"]');
+    if (mv) {
+      mv.setAttribute(
+        "content",
+        is916 ? "width=2160, height=3840, initial-scale=1" : "width=3840, initial-scale=1"
+      );
+    }
   }
 
   void (async function loadAndPlay() {

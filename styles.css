@@ -269,6 +269,13 @@ select.remote-input {
   letter-spacing: 0.04em;
 }
 
+.dropdown-menu-note {
+  margin: 0 14px 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
 .dropdown-menu-item {
   display: block;
   width: 100%;
@@ -1194,4 +1201,187 @@ select.remote-input {
 .player-shell--916 .playout-frame {
   width: min(100vw, calc(100vh * 9 / 16));
   height: min(100vh, calc(100vw * 16 / 9));
+}
+
+/*
+ * Fixed broadcast canvases for vMix / NDI (sharp scaling: match input res, 100% zoom).
+ * 1080p: ?hd=1 | hd=1080 | output=1080 → 1920×1080 or 1080×1920.
+ * 4K: ?hd=4k | hd=2160 | uhd | scale=2 | scale=200 → 3840×2160 or 2160×3840.
+ */
+.player-body.player-body--hd1080 {
+  margin: 0;
+  min-height: 0;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.player-body.player-body--hd1080-vertical {
+  width: 1080px;
+  height: 1920px;
+}
+
+.player-body.player-body--hd1080 .player-shell {
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.player-body.player-body--hd1080 .player-shell--169 .playout-frame {
+  width: 1920px;
+  height: 1080px;
+  max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.player-body.player-body--hd1080 .player-shell--916 .playout-frame {
+  width: 1080px;
+  height: 1920px;
+  max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.player-body.player-body--hd1080 .slide-layer {
+  padding: 56px 72px;
+}
+
+.player-body.player-body--hd1080 .slide-episode-title {
+  font-size: 3.75rem;
+  font-weight: 600;
+}
+
+.player-body.player-body--hd1080 .slide-episode-date {
+  font-size: 2.25rem;
+}
+
+.player-body.player-body--hd1080 .slide-role {
+  font-size: 2.125rem;
+}
+
+.player-body.player-body--hd1080 .slide-people {
+  font-size: 2rem;
+  line-height: 1.38;
+}
+
+.player-body.player-body--hd1080 .slide-empty {
+  font-size: 1.5rem;
+}
+
+.player-body.player-body--hd1080 .frame-9-16 .slide-layer {
+  padding: 48px 36px;
+}
+
+.player-body.player-body--hd1080 .frame-9-16 .slide-episode-title {
+  font-size: 2.85rem;
+}
+
+.player-body.player-body--hd1080 .frame-9-16 .slide-episode-date {
+  font-size: 1.85rem;
+}
+
+.player-body.player-body--hd1080 .frame-9-16 .slide-role {
+  font-size: 1.625rem;
+}
+
+.player-body.player-body--hd1080 .frame-9-16 .slide-people {
+  font-size: 1.5rem;
+}
+
+.player-body.player-body--hd1080 .frame-9-16 .slide-empty {
+  font-size: 1.2rem;
+}
+
+/*
+ * 4K UHD (3840×2160): ~2× the 1080p broadcast tier. Use ?hd=4k or ?scale=2 (or scale=200).
+ * Set vMix browser input to 3840×2160 and zoom 100% for 1:1 pixels.
+ */
+.player-body.player-body--hd4k {
+  margin: 0;
+  min-height: 0;
+  width: 3840px;
+  height: 2160px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.player-body.player-body--hd4k-vertical {
+  width: 2160px;
+  height: 3840px;
+}
+
+.player-body.player-body--hd4k .player-shell {
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.player-body.player-body--hd4k .player-shell--169 .playout-frame {
+  width: 3840px;
+  height: 2160px;
+  max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.player-body.player-body--hd4k .player-shell--916 .playout-frame {
+  width: 2160px;
+  height: 3840px;
+  max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.player-body.player-body--hd4k .slide-layer {
+  padding: 112px 144px;
+}
+
+.player-body.player-body--hd4k .slide-episode-title {
+  font-size: 7.5rem;
+  font-weight: 600;
+}
+
+.player-body.player-body--hd4k .slide-episode-date {
+  font-size: 4.5rem;
+}
+
+.player-body.player-body--hd4k .slide-role {
+  font-size: 4.25rem;
+}
+
+.player-body.player-body--hd4k .slide-people {
+  font-size: 4rem;
+  line-height: 1.38;
+}
+
+.player-body.player-body--hd4k .slide-empty {
+  font-size: 3rem;
+}
+
+.player-body.player-body--hd4k .frame-9-16 .slide-layer {
+  padding: 96px 72px;
+}
+
+.player-body.player-body--hd4k .frame-9-16 .slide-episode-title {
+  font-size: 5.7rem;
+}
+
+.player-body.player-body--hd4k .frame-9-16 .slide-episode-date {
+  font-size: 3.7rem;
+}
+
+.player-body.player-body--hd4k .frame-9-16 .slide-role {
+  font-size: 3.25rem;
+}
+
+.player-body.player-body--hd4k .frame-9-16 .slide-people {
+  font-size: 3rem;
+}
+
+.player-body.player-body--hd4k .frame-9-16 .slide-empty {
+  font-size: 2.4rem;
 }

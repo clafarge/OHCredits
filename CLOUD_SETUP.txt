@@ -41,9 +41,25 @@ Never commit connection strings or passwords to this repository.
    preflight has no valid JWT, so you usually need JWT verification OFF for
    publish-credits, and you must redeploy after changing it.
 
-   • CLI (recommended): from the linked repo folder run:
-       supabase functions deploy publish-credits --no-verify-jwt
-     This repo’s supabase/config.toml also sets verify_jwt = false for
+   • CLI (recommended): log in once (npx supabase login), then from repo root:
+       PowerShell:  .\scripts\deploy-publish-credits.ps1
+       Or manually: npx supabase functions deploy publish-credits ^
+         --project-ref uyufnbroqmwjtzvcsosv --no-verify-jwt --use-api --yes
+     Use --use-api on Windows to avoid Docker. CI can set SUPABASE_ACCESS_TOKEN
+     instead of interactive login (Dashboard → Account → Access Tokens).
+
+   Troubleshooting — “Requested function was not found” (HTTP 404):
+     The function is not deployed to THIS project ref. Common causes:
+     - Deployed from the Dashboard into a different Supabase project than the
+       one in editor-config.json / player-config.json.
+     - Function name is not exactly publish-credits (hyphen, not underscore).
+     - Old deploy: open Edge Functions in the Dashboard and confirm
+       publish-credits exists for project uyufnbroqmwjtzvcsosv, then redeploy.
+     Quick check (expect 401 JSON body, not 404):
+       curl -X POST "https://uyufnbroqmwjtzvcsosv.supabase.co/functions/v1/publish-credits" ^
+         -H "Content-Type: application/json" -d "{}"
+
+     This repo’s supabase/config.toml sets verify_jwt = false for
      publish-credits when you deploy with the CLI against a linked project.
 
    • Dashboard-only: Edge Functions → publish-credits → Settings → turn OFF
@@ -83,6 +99,11 @@ Never commit connection strings or passwords to this repository.
    https://YOUR_SITE/.../player.html?view=16x9&event=officehours
    (or 9:16). Their browser loads player-config.json from your site, then fetches
    the design from Supabase. No giant hash in the URL.
+
+   vMix / fixed canvas: &hd=1 or &hd=1080 → 1920×1080 (or 1080×1920 vertical).
+   4K: &hd=4k (or &hd=2160, &scale=2, &scale=200) → 3840×2160 or 2160×3840 —
+   match the browser input resolution and use 100% zoom so the page isn’t
+   upscaled by the app (scaling stays sharp).
 
 Alternatives: Firebase Firestore, Cloudflare D1 + Worker, PlanetScale + serverless
 API — same pattern: public read by event id, writes behind a secret or auth.
