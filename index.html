@@ -237,28 +237,13 @@
                 Same layout as a role block: a heading plus one line per row. In JSON use
                 <code>"kind": "customCard"</code> on a credit row. Appends to the <strong>last</strong> page — then drag to reorder or stage.
               </p>
-              <label class="json-label episode-tray-composer-label" for="new-card-role">Heading</label>
-              <input
-                id="new-card-role"
-                type="text"
-                class="remote-input remote-input--wide episode-tray-composer-input"
-                placeholder="e.g. Produced by"
-                autocomplete="off"
-                spellcheck="false"
-              />
-              <label class="json-label episode-tray-composer-label" for="new-card-body">Lines (one per line)</label>
-              <textarea
-                id="new-card-body"
-                class="remote-input remote-input--wide episode-tray-composer-input"
-                rows="3"
-                spellcheck="false"
-                placeholder="Name one&#10;Name two"
-              ></textarea>
               <button
                 type="button"
                 id="btn-add-custom-card"
                 class="btn episode-tray-composer-btn"
-                title="Adds this block as a custom card on the last page"
+                title="Open form to add a custom card on the last page"
+                aria-haspopup="dialog"
+                aria-controls="custom-card-shadowbox-panel"
               >
                 Add custom card
               </button>
@@ -269,6 +254,46 @@
         </section>
       </main>
     </div>
+
+    <div
+      id="custom-card-shadowbox"
+      class="oh-shadowbox"
+      hidden
+      aria-hidden="true"
+    >
+      <div class="oh-shadowbox__backdrop" data-oh-shadowbox-close tabindex="-1"></div>
+      <div
+        id="custom-card-shadowbox-panel"
+        class="oh-shadowbox__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="custom-card-shadowbox-title"
+      >
+        <h3 id="custom-card-shadowbox-title" class="oh-shadowbox__title">Custom credit card</h3>
+        <label class="json-label episode-tray-composer-label" for="new-card-role">Heading</label>
+        <input
+          id="new-card-role"
+          type="text"
+          class="remote-input remote-input--wide episode-tray-composer-input"
+          placeholder="e.g. Produced by"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <label class="json-label episode-tray-composer-label" for="new-card-body">Lines (one per line)</label>
+        <textarea
+          id="new-card-body"
+          class="remote-input remote-input--wide episode-tray-composer-input"
+          rows="3"
+          spellcheck="false"
+          placeholder="Name one&#10;Name two"
+        ></textarea>
+        <div class="oh-shadowbox__actions">
+          <button type="button" id="btn-custom-card-cancel" class="btn">Cancel</button>
+          <button type="button" id="btn-add-custom-card-submit" class="btn primary">Add card</button>
+        </div>
+      </div>
+    </div>
+
     <script src="oh-engine.js"></script>
     <script src="app.js"></script>
   </body>

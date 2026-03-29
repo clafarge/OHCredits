@@ -131,6 +131,9 @@
     newCardRole: document.getElementById("new-card-role"),
     newCardBody: document.getElementById("new-card-body"),
     btnAddCustomCard: document.getElementById("btn-add-custom-card"),
+    customCardShadowbox: document.getElementById("custom-card-shadowbox"),
+    btnCustomCardCancel: document.getElementById("btn-custom-card-cancel"),
+    btnAddCustomCardSubmit: document.getElementById("btn-add-custom-card-submit"),
   };
 
   /** @type {string | null} */
@@ -1176,6 +1179,8 @@
     if (els.btnAddCustomCard) els.btnAddCustomCard.disabled = playing;
     if (els.newCardRole) els.newCardRole.disabled = playing;
     if (els.newCardBody) els.newCardBody.disabled = playing;
+    if (els.btnCustomCardCancel) els.btnCustomCardCancel.disabled = playing;
+    if (els.btnAddCustomCardSubmit) els.btnAddCustomCardSubmit.disabled = playing;
   }
 
   function designStateForShare() {
@@ -1434,6 +1439,7 @@
     const ac = new AbortController();
     playAbort = ac;
     setPlayingUi(true);
+    closeCustomCardShadowbox();
     try {
       await Promise.all([
         OH.runPlayoutOnElement(els.slide169, s169, ac),
@@ -1837,9 +1843,58 @@
       void loadCreditsJsonFromUrl();
     });
   }
+  /** @returns {boolean} */
+  function isCustomCardShadowboxOpen() {
+    return !!(els.customCardShadowbox && !els.customCardShadowbox.hasAttribute("hidden"));
+  }
+
+  function openCustomCardShadowbox() {
+    if (!els.customCardShadowbox) return;
+    els.customCardShadowbox.removeAttribute("hidden");
+    els.customCardShadowbox.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    if (els.newCardRole) {
+      els.newCardRole.disabled = false;
+      els.newCardRole.focus();
+    }
+    if (els.newCardBody) els.newCardBody.disabled = false;
+  }
+
+  function closeCustomCardShadowbox() {
+    if (!els.customCardShadowbox) return;
+    els.customCardShadowbox.setAttribute("hidden", "");
+    els.customCardShadowbox.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    if (els.btnAddCustomCard) els.btnAddCustomCard.focus();
+  }
+
+  if (els.customCardShadowbox) {
+    els.customCardShadowbox.addEventListener("click", (e) => {
+      const t = /** @type {HTMLElement} */ (e.target);
+      if (t.closest("[data-oh-shadowbox-close]")) closeCustomCardShadowbox();
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || !isCustomCardShadowboxOpen()) return;
+    e.preventDefault();
+    closeCustomCardShadowbox();
+  });
+
   if (els.btnAddCustomCard) {
     els.btnAddCustomCard.addEventListener("click", () => {
+      openCustomCardShadowbox();
+    });
+  }
+  if (els.btnCustomCardCancel) {
+    els.btnCustomCardCancel.addEventListener("click", () => {
+      closeCustomCardShadowbox();
+    });
+  }
+  if (els.btnAddCustomCardSubmit) {
+    els.btnAddCustomCardSubmit.addEventListener("click", () => {
       addCustomCardToLayout();
+      closeCustomCardShadowbox();
     });
   }
   if (els.jsonUrlInput) {
