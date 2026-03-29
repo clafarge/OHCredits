@@ -392,10 +392,35 @@
   }
 
   /**
+   * True when each name fits on one line in 9:16 (narrowest) and at most 2 names per block —
+   * height-based packing would squeeze ~4 of these per page; we prefer 3-per-page balance instead.
+   * @param {string} id
+   */
+  function isCompactSingleLineCredit(id) {
+    const item = itemsById.get(id);
+    if (!item) return false;
+    if (item.people.length > 2) return false;
+    const narrowCpl = CPL["916"];
+    for (const p of item.people) {
+      const lines = Math.max(1, Math.ceil(p.length / narrowCpl));
+      if (lines > 1) return false;
+    }
+    return true;
+  }
+
+  /**
    * Start a new page when adding the next role would exceed budget in either aspect.
+   * Compact one-line credits use the same ~3 roles/page balancing as starter short runs (not 4+2 from height).
    * @param {string[]} orderedIds
    */
   function autoPaginateShared(orderedIds) {
+    if (!orderedIds.length) return [[]];
+    if (orderedIds.every(isCompactSingleLineCredit)) {
+      const runs = orderedIds.map((id) => ({ row: -1, ids: [id] }));
+      const balanced = paginateShortRunsThreePerPage(runs);
+      return balanced.length ? balanced : [[]];
+    }
+
     const b169 = BUDGET_PX["169"];
     const b916 = BUDGET_PX["916"];
     /** @type {string[][]} */
