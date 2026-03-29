@@ -13,6 +13,8 @@
   const OUT_BLACK_HOLD_MS = 1000;
 
   const EPISODE_ID = "__episode__";
+  /** Episode JSON field `Tláloc Traversal` becomes its own draggable credit card. */
+  const TLALOC_ID = "__tlaloc__";
   const PEOPLE_MAX_PER_GROUP = 12;
 
   function sleep(ms) {
@@ -99,7 +101,7 @@
     if (item.kind === "customCard") return base;
     if (item.people.length <= 1) return base;
     const norm = base.trim().toLowerCase().replace(/\s+/g, " ");
-    if (norm === "special thanks") return base;
+    if (norm === "special thanks" || norm === "tláloc traversal") return base;
     return pluralizeRolePhrase(base);
   }
 
@@ -227,6 +229,7 @@
     LEAD_BLACK_MS,
     OUT_BLACK_HOLD_MS,
     EPISODE_ID,
+    TLALOC_ID,
     PEOPLE_MAX_PER_GROUP,
     sleep,
     escapeHtml,

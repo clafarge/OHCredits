@@ -5,6 +5,7 @@
   if (!OH) throw new Error("Load oh-engine.js before app.js");
 
   const EPISODE_ID = OH.EPISODE_ID;
+  const TLALOC_ID = OH.TLALOC_ID;
   const PEOPLE_MAX_PER_GROUP = OH.PEOPLE_MAX_PER_GROUP;
 
   const LS_REMOTE_EVENT = "ohcredits_remote_event";
@@ -23,6 +24,9 @@
 
   /** Panelists share page 1 with Host/Reader when total panelist names are 0–6 (fewer than 7). */
   const PANELISTS_MERGE_ON_PAGE1_MAX = 6;
+
+  /** `episode` JSON key for Tláloc Traversal line on the title card (label fixed; value from JSON). */
+  const EPISODE_TLALOC_KEY = "Tláloc Traversal";
 
   /**
    * Usable vertical space (px) per page at playout scale — tuned so ~3 simple credits
@@ -660,11 +664,29 @@
     return pages.some((pg) => pg.includes(EPISODE_ID));
   }
 
+  function tlalocOnAPage() {
+    return pages.some((pg) => pg.includes(TLALOC_ID));
+  }
+
+  /** Keep TLALOC_ID in parkedIds when staged so design share / player round-trip matches the editor. */
+  function syncTlalocParkedState() {
+    if (!itemsById.has(TLALOC_ID)) {
+      parkedIds = parkedIds.filter((id) => id !== TLALOC_ID);
+      return;
+    }
+    if (tlalocOnAPage()) {
+      parkedIds = parkedIds.filter((id) => id !== TLALOC_ID);
+    } else if (!parkedIds.includes(TLALOC_ID)) {
+      parkedIds.push(TLALOC_ID);
+    }
+  }
+
   function renderEpisodeTray() {
     const host = els.episodeTrayHost;
     if (!host) return;
 
     parkedIds = parkedIds.filter((id) => itemsById.has(id));
+    syncTlalocParkedState();
 
     const hasSomething = itemsById.size > 0 || episodeHtml || parkedIds.length > 0;
     if (!hasSomething) {
@@ -674,6 +696,7 @@
 
     const onPage = episodeOnAPage();
     const parkedHtml = parkedIds
+      .filter((pid) => pid !== TLALOC_ID)
       .map((pid) => {
         const item = itemsById.get(pid);
         return item ? creditBlockHtml(item, pid) : "";
@@ -690,13 +713,24 @@
       }
     }
 
+    let tlalocSlot = "";
+    const tlalocItem = itemsById.get(TLALOC_ID);
+    if (tlalocItem) {
+      if (tlalocOnAPage()) {
+        tlalocSlot = `<p class="episode-tray-sink-msg layout-hint" style="margin:0 0 8px;">The Tláloc Traversal card is on a page — drop it here to stage it, or drop other credit cards here to stage them.</p>`;
+      } else {
+        tlalocSlot = `<p class="episode-tray-slot-label">Tláloc Traversal</p>
+          <div class="episode-tray-chip-wrap episode-tray-chip-wrap--tlaloc">${creditBlockHtml(tlalocItem, TLALOC_ID)}</div>`;
+      }
+    }
+
     const parkedSlot =
       parkedHtml.length > 0
         ? `<p class="episode-tray-slot-label">Staged credit cards (hidden in play)</p>
            <div class="episode-tray-chip-wrap episode-tray-chip-wrap--parked">${parkedHtml}</div>`
         : "";
 
-    host.innerHTML = `${episodeSlot}${parkedSlot}`;
+    host.innerHTML = `${episodeSlot}${tlalocSlot}${parkedSlot}`;
   }
 
   function hasExistingDesign() {
@@ -720,8 +754,17 @@
     const episodeKeyInJson = Object.prototype.hasOwnProperty.call(data, "episode");
 
     let epHtml = null;
+    let tlalocValue = null;
+    let tlalocInEpisode = false;
     const episode = data.episode;
     if (episode != null && typeof episode === "object") {
+      tlalocInEpisode = Object.prototype.hasOwnProperty.call(episode, EPISODE_TLALOC_KEY);
+      const rawTlaloc = episode[EPISODE_TLALOC_KEY];
+      let tlalocVal = "";
+      if (typeof rawTlaloc === "string") tlalocVal = rawTlaloc.trim();
+      else if (rawTlaloc != null && rawTlaloc !== "") tlalocVal = String(rawTlaloc).trim();
+      if (tlalocVal) tlalocValue = tlalocVal;
+
       const title = typeof episode.title === "string" ? episode.title.trim() : "";
       const date = typeof episode.date === "string" ? episode.date.trim() : "";
       if (title || date) {
@@ -735,7 +778,7 @@
     const baseRow = merge ? nextCreditRowBaseIndex() : 0;
     const { items, order } = buildCreditItemsMap(credits, baseRow);
 
-    if (order.length === 0 && !epHtml) {
+    if (order.length === 0 && !epHtml && !tlalocValue) {
       if (!merge || !episodeKeyInJson) {
         throw new Error(
           merge
@@ -752,8 +795,39 @@
       itemOrder: order,
       episodeHtml: epHtml,
       episodeKeyInJson,
+      tlalocValue,
+      tlalocInEpisode,
       designerPageHint,
     };
+  }
+
+  function stripTlalocFromPages() {
+    for (const pg of pages) {
+      let idx;
+      while ((idx = pg.indexOf(TLALOC_ID)) !== -1) pg.splice(idx, 1);
+    }
+  }
+
+  function applyTlalocFromParsed(parsed, merging) {
+    if (!merging) {
+      if (parsed.tlalocValue) {
+        itemsById.set(TLALOC_ID, { role: EPISODE_TLALOC_KEY, people: [parsed.tlalocValue] });
+      } else {
+        itemsById.delete(TLALOC_ID);
+        parkedIds = parkedIds.filter((id) => id !== TLALOC_ID);
+        stripTlalocFromPages();
+      }
+      return;
+    }
+    if (parsed.episodeKeyInJson && parsed.tlalocInEpisode) {
+      if (parsed.tlalocValue) {
+        itemsById.set(TLALOC_ID, { role: EPISODE_TLALOC_KEY, people: [parsed.tlalocValue] });
+      } else {
+        itemsById.delete(TLALOC_ID);
+        parkedIds = parkedIds.filter((id) => id !== TLALOC_ID);
+        stripTlalocFromPages();
+      }
+    }
   }
 
   /**
@@ -812,11 +886,13 @@
         } else {
           episodeHtml = null;
         }
+        applyTlalocFromParsed(parsed, false);
         if (n) {
           pages = layoutPagesForOrder(parsed.itemOrder, hint);
         } else {
           pages = [[]];
         }
+        syncTlalocParkedState();
         report(
           `${n} credit block(s) · ${pages.length} page(s) · long roles split into ≤${PEOPLE_MAX_PER_GROUP} names per block; drag each block separately.${layoutNote}`,
           "ok"
@@ -828,6 +904,7 @@
         if (parsed.episodeKeyInJson) {
           episodeHtml = parsed.episodeHtml;
         }
+        applyTlalocFromParsed(parsed, true);
         const prevPageCount = pages.length;
         if (n) {
           const newPages = layoutPagesForOrder(parsed.itemOrder, hint);
@@ -838,7 +915,7 @@
             "ok"
           );
         } else if (parsed.episodeKeyInJson) {
-          report("Updated title/date from JSON (no new credits).", "ok");
+          report("Updated episode / title card / Tláloc from JSON (no new credits).", "ok");
         }
       }
       renderEpisodeTray();
@@ -919,6 +996,7 @@
 
   function moveCredit(id, toPageIndex, insertBeforeIndex) {
     if (id === EPISODE_ID && !episodeHtml) return;
+    if (id === TLALOC_ID && !itemsById.has(TLALOC_ID)) return;
     if (!pages[toPageIndex]) return;
 
     let fromPi = -1;
@@ -933,7 +1011,11 @@
     }
 
     const fromParked = parkedIds.indexOf(id) !== -1;
-    if (id !== EPISODE_ID && fromPi === -1 && !fromParked) return;
+    const tlalocStagedInTray =
+      id === TLALOC_ID && itemsById.has(TLALOC_ID) && !tlalocOnAPage() && !fromParked;
+    if (id !== EPISODE_ID && id !== TLALOC_ID && fromPi === -1 && !fromParked) return;
+    if (id === EPISODE_ID && fromPi === -1 && !fromParked && !episodeHtml) return;
+    if (id === TLALOC_ID && fromPi === -1 && !fromParked && !tlalocStagedInTray) return;
 
     if (id === EPISODE_ID) {
       stripEpisodeFromPages();
@@ -950,6 +1032,9 @@
 
     pages[toPageIndex].splice(ins, 0, id);
     pages = normalizePages(pages);
+    if (id === TLALOC_ID) {
+      parkedIds = parkedIds.filter((x) => x !== TLALOC_ID);
+    }
     renderPageStrip();
     renderEpisodeTray();
   }
