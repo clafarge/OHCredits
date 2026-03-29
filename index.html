@@ -12,42 +12,6 @@
     <div class="app">
       <header class="toolbar">
         <div class="toolbar-row toolbar-row--primary">
-          <div class="dropdown" id="links-dropdown">
-            <button
-              type="button"
-              id="btn-menu-links"
-              class="btn"
-              aria-expanded="false"
-              aria-haspopup="true"
-              aria-controls="panel-menu-links"
-            >
-              Links ▾
-            </button>
-            <div
-              id="panel-menu-links"
-              class="dropdown-panel hidden"
-              role="menu"
-              hidden
-              aria-label="Copy player links"
-            >
-              <div class="dropdown-panel-title">Supabase cloud (requires Event code)</div>
-              <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="event-169">
-                Copy 16:9 player URL with Event
-              </button>
-              <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="event-916">
-                Copy 9:16 player URL with Event
-              </button>
-              <div class="dropdown-panel-title">Embedded in URL (no cloud)</div>
-              <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="hash-169">
-                Copy 16:9 link (full layout in URL)
-              </button>
-              <button type="button" class="dropdown-menu-item" role="menuitem" data-links-action="hash-916">
-                Copy 9:16 link (full layout in URL)
-              </button>
-              <p id="links-menu-status" class="dropdown-menu-status" role="status"></p>
-            </div>
-          </div>
-
           <button
             type="button"
             id="btn-toggle-remote"
@@ -172,7 +136,41 @@
       <main class="workspace">
         <div class="workspace-grid">
           <section class="workspace-col" aria-labelledby="heading-169">
-            <h2 id="heading-169" class="workspace-heading">16:9 preview</h2>
+            <div class="workspace-heading-row">
+              <h2 id="heading-169" class="workspace-heading workspace-heading--inline">16:9 preview</h2>
+              <div class="workspace-heading-links" role="group" aria-label="16:9 player URLs">
+                <button
+                  type="button"
+                  id="btn-copy-cloud-169"
+                  class="workspace-link-icon"
+                  title="Copy cloud link"
+                  aria-label="Copy cloud link — 16:9 player URL with event"
+                >
+                  <svg class="workspace-link-icon__svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  id="btn-copy-data-169"
+                  class="workspace-link-icon"
+                  title="Copy data link"
+                  aria-label="Copy data link — 16:9 URL with full layout in URL"
+                >
+                  <svg class="workspace-link-icon__svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
             <div class="playout-shell">
               <div class="frame frame-16-9 playout-frame">
                 <div class="frame-inner">
@@ -185,7 +183,41 @@
           </section>
 
           <section class="workspace-col" aria-labelledby="heading-916">
-            <h2 id="heading-916" class="workspace-heading workspace-heading--916">9:16 preview</h2>
+            <div class="workspace-heading-row workspace-heading-row--916">
+              <h2 id="heading-916" class="workspace-heading workspace-heading--916 workspace-heading--inline">9:16 preview</h2>
+              <div class="workspace-heading-links" role="group" aria-label="9:16 player URLs">
+                <button
+                  type="button"
+                  id="btn-copy-cloud-916"
+                  class="workspace-link-icon"
+                  title="Copy cloud link"
+                  aria-label="Copy cloud link — 9:16 player URL with event"
+                >
+                  <svg class="workspace-link-icon__svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  id="btn-copy-data-916"
+                  class="workspace-link-icon"
+                  title="Copy data link"
+                  aria-label="Copy data link — 9:16 URL with full layout in URL"
+                >
+                  <svg class="workspace-link-icon__svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
             <div class="playout-shell playout-shell--916">
               <div class="frame frame-9-16 playout-frame">
                 <div class="frame-inner">
@@ -201,7 +233,7 @@
         <section class="layout-section" aria-labelledby="heading-pages">
           <h2 id="heading-pages" class="workspace-heading">Pages</h2>
           <p class="layout-hint">
-            One order for both formats — drag cards between page boxes or into the <strong>staging</strong> strip below (staged items do not play until placed on a page). Use the red <strong>×</strong> to remove a card. Use the <strong>grip</strong> beside a page title to reorder pages, or drop on <strong>Last</strong> to move a page to the end. Load roles via <strong>Paste credits JSON</strong> → <strong>Add JSON</strong> (or a JSON URL); <strong>Publish credits</strong>, <strong>Links</strong>, and <strong>Cloud settings</strong> for the player; <strong>Clear JSON</strong> resets the layout.
+            One order for both formats — drag cards between page boxes or into the <strong>staging</strong> strip below (staged items do not play until placed on a page). Use the red <strong>×</strong> to remove a card. Use the <strong>grip</strong> beside a page title to reorder pages, or drop on <strong>Last</strong> to move a page to the end. Load roles via <strong>Paste credits JSON</strong> → <strong>Add JSON</strong> (or a JSON URL). Use the cloud and link icons beside each preview for player URLs; <strong>Publish credits</strong> and <strong>Cloud settings</strong> for Supabase; <strong>Clear JSON</strong> resets the layout.
           </p>
           <div
             class="episode-tray episode-tray--staging"

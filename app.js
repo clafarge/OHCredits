@@ -114,10 +114,10 @@
     btnAddPage: document.getElementById("btn-add-page"),
     btnPublishCredits: document.getElementById("btn-publish-credits"),
     toolbarPublishStatus: document.getElementById("toolbar-publish-status"),
-    btnMenuLinks: document.getElementById("btn-menu-links"),
-    panelMenuLinks: document.getElementById("panel-menu-links"),
-    linksMenuStatus: document.getElementById("links-menu-status"),
-    linksDropdown: document.getElementById("links-dropdown"),
+    btnCopyCloud169: document.getElementById("btn-copy-cloud-169"),
+    btnCopyData169: document.getElementById("btn-copy-data-169"),
+    btnCopyCloud916: document.getElementById("btn-copy-cloud-916"),
+    btnCopyData916: document.getElementById("btn-copy-data-916"),
     toggleRemote: document.getElementById("btn-toggle-remote"),
     remotePanel: document.getElementById("remote-panel"),
     remoteEventPreset: document.getElementById("remote-event-preset"),
@@ -219,13 +219,6 @@
     els.toolbarPublishStatus.textContent = message || "";
     els.toolbarPublishStatus.classList.remove("error", "ok");
     if (kind) els.toolbarPublishStatus.classList.add(kind);
-  }
-
-  function setLinksMenuStatus(message, kind) {
-    if (!els.linksMenuStatus) return;
-    els.linksMenuStatus.textContent = message || "";
-    els.linksMenuStatus.classList.remove("error", "ok");
-    if (kind) els.linksMenuStatus.classList.add(kind);
   }
 
   function validateEventSlug(s) {
@@ -1136,7 +1129,10 @@
     if (els.btnClearJson) els.btnClearJson.disabled = playing;
     if (els.toggleRemote) els.toggleRemote.disabled = playing;
     if (els.btnPublishCredits) els.btnPublishCredits.disabled = playing;
-    if (els.btnMenuLinks) els.btnMenuLinks.disabled = playing;
+    if (els.btnCopyCloud169) els.btnCopyCloud169.disabled = playing;
+    if (els.btnCopyData169) els.btnCopyData169.disabled = playing;
+    if (els.btnCopyCloud916) els.btnCopyCloud916.disabled = playing;
+    if (els.btnCopyData916) els.btnCopyData916.disabled = playing;
     if (els.btnTogglePublishSecret) els.btnTogglePublishSecret.disabled = playing;
     if (els.btnLoadJsonUrl) els.btnLoadJsonUrl.disabled = playing;
     if (els.btnAddCustomCard) els.btnAddCustomCard.disabled = playing;
@@ -1614,63 +1610,25 @@
     });
   }
 
-  function closeLinksMenu() {
-    if (!els.panelMenuLinks || !els.btnMenuLinks) return;
-    els.panelMenuLinks.hidden = true;
-    els.panelMenuLinks.classList.add("hidden");
-    els.btnMenuLinks.setAttribute("aria-expanded", "false");
-  }
-
-  function openLinksMenu() {
-    if (!els.panelMenuLinks || !els.btnMenuLinks) return;
-    els.panelMenuLinks.hidden = false;
-    els.panelMenuLinks.classList.remove("hidden");
-    els.btnMenuLinks.setAttribute("aria-expanded", "true");
-    setLinksMenuStatus("", "");
-  }
-
-  if (els.btnMenuLinks && els.panelMenuLinks) {
-    els.btnMenuLinks.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const open = !els.panelMenuLinks.hidden;
-      if (open) closeLinksMenu();
-      else openLinksMenu();
-    });
-
-    els.panelMenuLinks.addEventListener("click", (e) => {
-      const item = e.target.closest("[data-links-action]");
-      if (!item) return;
-      const action = item.getAttribute("data-links-action");
-      void (async () => {
-        switch (action) {
-          case "event-169":
-            await copyPlayerEventUrl("16x9", "16:9", setLinksMenuStatus);
-            break;
-          case "event-916":
-            await copyPlayerEventUrl("9x16", "9:16", setLinksMenuStatus);
-            break;
-          case "hash-169":
-            await copyPlayerLink("16x9", "16:9", setLinksMenuStatus);
-            break;
-          case "hash-916":
-            await copyPlayerLink("9x16", "9:16", setLinksMenuStatus);
-            break;
-          default:
-            break;
-        }
-        closeLinksMenu();
-      })();
+  if (els.btnCopyCloud169) {
+    els.btnCopyCloud169.addEventListener("click", () => {
+      void copyPlayerEventUrl("16x9", "16:9", setJsonStatus);
     });
   }
-
-  document.addEventListener("click", () => {
-    closeLinksMenu();
-  });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeLinksMenu();
-  });
-  if (els.linksDropdown) {
-    els.linksDropdown.addEventListener("click", (e) => e.stopPropagation());
+  if (els.btnCopyData169) {
+    els.btnCopyData169.addEventListener("click", () => {
+      void copyPlayerLink("16x9", "16:9", setJsonStatus);
+    });
+  }
+  if (els.btnCopyCloud916) {
+    els.btnCopyCloud916.addEventListener("click", () => {
+      void copyPlayerEventUrl("9x16", "9:16", setJsonStatus);
+    });
+  }
+  if (els.btnCopyData916) {
+    els.btnCopyData916.addEventListener("click", () => {
+      void copyPlayerLink("9x16", "9:16", setJsonStatus);
+    });
   }
 
   if (els.btnTogglePublishSecret && els.remotePublishSecret) {

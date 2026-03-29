@@ -501,6 +501,69 @@ select.remote-input {
   letter-spacing: 0.02em;
 }
 
+.workspace-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 12px;
+  flex-wrap: wrap;
+}
+
+.workspace-heading-row .workspace-heading--inline {
+  margin: 0;
+}
+
+.workspace-heading-row--916 {
+  justify-content: center;
+}
+
+.workspace-heading-row--916 .workspace-heading--916 {
+  width: auto;
+  text-align: center;
+}
+
+.workspace-heading-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.workspace-link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-input);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.workspace-link-icon:hover:not(:disabled) {
+  color: var(--link);
+  border-color: rgba(37, 99, 235, 0.45);
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.workspace-link-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.workspace-link-icon__svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
 /* Narrow centered frame: align title with the column center above the preview. */
 .workspace-heading--916 {
   text-align: center;
