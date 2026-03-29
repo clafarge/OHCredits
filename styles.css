@@ -1,26 +1,30 @@
 /*
- * Palette aligned with Office Hours Global (Thesis Focus skin):
- * https://officehours.global/ — body #272729 / #1d1c20, text #f7f7f7, links #ccf1ff, action #12a7ff
+ * Look and feel aligned with Show Graphics gallery (toolbar, grays, blue primary):
+ * https://adp-lab.github.io/show-graphics_AD/gallery.html
  */
 :root {
-  --bg: #272729;
-  --surface: #1d1c20;
-  --surface-input: #151418;
-  --toolbar-bg: #252729;
-  --role: #ccf1ff;
-  --name: #a3a3a3;
-  --text: #f7f7f7;
-  --text-muted: #a3a3a3;
-  --link: #ccf1ff;
-  --border: rgba(255, 255, 255, 0.1);
-  --accent: #12a7ff;
-  --accent-hover: #38b5ff;
-  --btn-secondary-bg: #ccf1ff;
-  --btn-secondary-text: #545454;
-  --btn-secondary-hover: #f2fbff;
-  --font-size: 17px;
-  --font: system-ui, BlinkMacSystemFont, Roboto, "Segoe UI", Segoe, "Helvetica Neue", Tahoma, sans-serif;
-  --line-height-body: 1.706; /* ~29px at 17px, matches OHG Focus */
+  --bg: #0d0d0d;
+  --surface: #1a1a1a;
+  --surface-band: #111;
+  --surface-input: #222;
+  --toolbar-bg: #151515;
+  --role: #93c5fd;
+  --name: #9ca3af;
+  --text: #ddd;
+  --text-muted: #666;
+  --link: #60a5fa;
+  --border: #2a2a2a;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --btn-gray-bg: #2a2a2a;
+  --btn-gray-text: #ccc;
+  --btn-gray-hover: #333;
+  --font-size: 16px;
+  --font: system-ui, sans-serif;
+  --line-height-body: 1.5;
+  --radius: 5px;
+  --radius-lg: 6px;
+  --radius-card: 7px;
 }
 
 *,
@@ -88,21 +92,19 @@ body {
 
 .btn {
   font-family: inherit;
-  font-size: 14px;
+  font-size: 0.82rem;
   font-weight: 500;
-  padding: 10px 16px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-bottom-width: 3px;
-  border-bottom-color: rgba(0, 0, 0, 0.28);
-  border-radius: 11px;
-  background: var(--btn-secondary-bg);
-  color: var(--btn-secondary-text);
+  padding: 7px 14px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--btn-gray-bg);
+  color: var(--btn-gray-text);
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.15s ease;
+  transition: background 0.15s ease;
 }
 
 .btn:hover:not(:disabled) {
-  background: var(--btn-secondary-hover);
+  background: var(--btn-gray-hover);
 }
 
 .btn:disabled {
@@ -112,9 +114,7 @@ body {
 
 .btn.primary {
   background: var(--accent);
-  border-color: rgba(0, 0, 0, 0.12);
-  border-bottom-color: rgba(0, 0, 0, 0.35);
-  color: #1a1a1a;
+  color: #fff;
 }
 
 .btn.primary:hover:not(:disabled) {
@@ -123,26 +123,24 @@ body {
 
 /* Paste credits JSON: looks “on” while the panel is open (close again for less clutter). */
 #btn-toggle-json[aria-expanded="true"] {
-  background: rgba(18, 167, 255, 0.18);
-  border-color: var(--accent);
+  background: rgba(37, 99, 235, 0.22);
   color: var(--text);
-  box-shadow: inset 0 0 0 1px rgba(18, 167, 255, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.5);
 }
 
 #btn-toggle-json[aria-expanded="true"]:hover:not(:disabled) {
-  background: rgba(18, 167, 255, 0.26);
+  background: rgba(37, 99, 235, 0.32);
 }
 
 /* Cloud settings: same “on” treatment while the panel is open. */
 #btn-toggle-remote[aria-expanded="true"] {
-  background: rgba(18, 167, 255, 0.18);
-  border-color: var(--accent);
+  background: rgba(37, 99, 235, 0.22);
   color: var(--text);
-  box-shadow: inset 0 0 0 1px rgba(18, 167, 255, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.5);
 }
 
 #btn-toggle-remote[aria-expanded="true"]:hover:not(:disabled) {
-  background: rgba(18, 167, 255, 0.26);
+  background: rgba(37, 99, 235, 0.32);
 }
 
 .btn-add-page {
@@ -193,13 +191,13 @@ body {
   display: block;
   width: 100%;
   max-width: 360px;
-  padding: 8px 10px;
-  border-radius: 7px;
-  border: 1px solid rgba(0, 0, 0, 0.25);
+  padding: 7px 11px;
+  border-radius: var(--radius);
+  border: 1px solid #3a3a3a;
   background: var(--surface-input);
-  color: var(--text);
+  color: #fff;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 0.85rem;
 }
 
 .remote-input--wide {
@@ -254,7 +252,7 @@ select.remote-input {
   padding: 6px 0 10px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
 }
 
@@ -285,7 +283,7 @@ select.remote-input {
 }
 
 .dropdown-menu-item:hover {
-  background: rgba(204, 241, 255, 0.08);
+  background: var(--btn-gray-hover);
 }
 
 .dropdown-menu-status {
@@ -323,9 +321,9 @@ select.remote-input {
 .json-url-hint code,
 .episode-tray-composer-hint code {
   font-size: 0.92em;
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.06);
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: 4px;
 }
 
 .json-url-row {
@@ -340,13 +338,13 @@ select.remote-input {
 .json-url-input {
   flex: 1;
   min-width: 200px;
-  padding: 8px 10px;
-  border-radius: 7px;
-  border: 1px solid rgba(0, 0, 0, 0.25);
+  padding: 7px 11px;
+  border-radius: var(--radius);
+  border: 1px solid #3a3a3a;
   background: var(--surface-input);
-  color: var(--text);
+  color: #fff;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 0.85rem;
 }
 
 .remote-secret-row {
@@ -394,15 +392,15 @@ select.remote-input {
 
 .remote-editor-config-url {
   margin: 0 0 10px;
-  padding: 10px 12px;
+  padding: 8px 14px;
   font-size: 12px;
   font-family: ui-monospace, monospace;
   word-break: break-all;
   line-height: 1.4;
-  border-radius: 7px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface-input);
-  color: #9ad29a;
+  color: #86efac;
   max-width: 640px;
 }
 
@@ -434,11 +432,11 @@ select.remote-input {
   font-family: ui-monospace, Menlo, Consolas, Monaco, monospace;
   font-size: 13px;
   line-height: 1.45;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.25);
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid #3a3a3a;
   background: var(--surface-input);
-  color: var(--text);
+  color: #fff;
   resize: vertical;
   min-height: 180px;
 }
@@ -457,11 +455,11 @@ select.remote-input {
 }
 
 .json-status.error {
-  color: #e57373;
+  color: #fca5a5;
 }
 
 .json-status.ok {
-  color: #81c784;
+  color: #86efac;
 }
 
 .workspace {
@@ -536,11 +534,10 @@ select.remote-input {
 .frame {
   width: 100%;
   max-width: min(100%, 720px);
-  background: #050505;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .frame-16-9 {
@@ -555,7 +552,7 @@ select.remote-input {
   width: 100%;
   height: 100%;
   position: relative;
-  background: #050505;
+  background: #0a0a0a;
 }
 
 .slide-layer {
@@ -685,10 +682,10 @@ select.remote-input {
 }
 
 .episode-tray {
-  padding: 12px 14px;
-  border-radius: 8px;
-  border: 1px dashed rgba(204, 241, 255, 0.22);
-  background: var(--surface);
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface-band);
   max-width: 52rem;
 }
 
@@ -731,16 +728,16 @@ select.remote-input {
 }
 
 .page-box--organizer .credit-draggable--title-card {
-  border-color: rgba(204, 241, 255, 0.28);
+  border-color: rgba(37, 99, 235, 0.45);
 }
 
 .page-box--organizer .credit-draggable--title-card:hover {
-  border-color: rgba(204, 241, 255, 0.45);
+  border-color: rgba(37, 99, 235, 0.65);
 }
 
 .episode-tray.episode-tray--drop-target {
   border-color: var(--accent);
-  background: rgba(18, 167, 255, 0.1);
+  background: rgba(37, 99, 235, 0.12);
 }
 
 .episode-tray-sink-msg {
@@ -752,10 +749,11 @@ select.remote-input {
 
 .episode-tray-slot-label {
   margin: 0 0 4px;
-  font-size: 12px;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-muted);
-  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .episode-tray-chip-wrap {
@@ -798,12 +796,12 @@ select.remote-input {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: #555;
   writing-mode: vertical-rl;
   text-orientation: mixed;
-  border: 1px dashed rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-band);
   cursor: default;
   user-select: none;
 }
@@ -811,7 +809,7 @@ select.remote-input {
 .page-strip-end-drop.page-box--page-drop-target {
   color: var(--accent);
   border-color: var(--accent);
-  background: rgba(18, 167, 255, 0.12);
+  background: rgba(37, 99, 235, 0.15);
 }
 
 .page-box {
@@ -819,10 +817,10 @@ select.remote-input {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-card);
   background: var(--surface);
   overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .page-box-remove {
@@ -913,7 +911,7 @@ select.remote-input {
   padding: 6px 8px;
   font-size: 11px;
   color: var(--text-muted);
-  background: #252529;
+  background: var(--toolbar-bg);
   border-bottom: 1px solid var(--border);
 }
 
@@ -943,8 +941,8 @@ select.remote-input {
 }
 
 .page-box-drag-handle:hover {
-  color: var(--link);
-  background: rgba(204, 241, 255, 0.08);
+  color: #ccc;
+  background: var(--btn-gray-hover);
 }
 
 .page-box-drag-handle:active {
@@ -1000,7 +998,7 @@ select.remote-input {
 }
 
 .page-box-meta--ok {
-  color: #7cb87c;
+  color: #86efac;
 }
 
 .page-box-meta--warn {
@@ -1008,7 +1006,7 @@ select.remote-input {
 }
 
 .page-box-meta--bad {
-  color: #c97a7a;
+  color: #fca5a5;
 }
 
 .page-box-viewport {
@@ -1062,8 +1060,8 @@ select.remote-input {
   min-width: 26px;
   border: none;
   border-radius: 4px;
-  background: rgba(90, 20, 20, 0.9);
-  color: #ff8a80;
+  background: #7f1d1d;
+  color: #fca5a5;
   font-size: 18px;
   font-weight: 700;
   line-height: 1.15;
@@ -1072,8 +1070,8 @@ select.remote-input {
 }
 
 .credit-card-remove:hover {
-  color: #fff;
-  background: #c62828;
+  color: #fecaca;
+  background: #991b1b;
 }
 
 .credit-card-remove:focus-visible {
@@ -1095,8 +1093,8 @@ select.remote-input {
 }
 
 .credit-draggable:hover {
-  border-color: rgba(204, 241, 255, 0.2);
-  background: rgba(204, 241, 255, 0.04);
+  border-color: #444;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .credit-draggable:active {
@@ -1113,14 +1111,14 @@ select.remote-input {
   align-items: center;
   justify-content: center;
   font-size: 11px;
-  color: var(--text-muted);
-  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+  color: #555;
+  border-top: 1px solid #1e1e1e;
   padding: 6px;
 }
 
 .page-box-drop-zone.page-box-drop-target {
   color: var(--accent);
-  background: rgba(18, 167, 255, 0.12);
+  background: rgba(37, 99, 235, 0.12);
 }
 
 /* Standalone third-party player (player.html) */
