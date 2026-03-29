@@ -770,6 +770,27 @@ select.remote-input {
   font-size: clamp(11px, 3.2cqh, 1rem);
 }
 
+/* Editor workspace: 16:9 preview only — slightly smaller type vs default clamps so it compares better to broadcast. */
+.workspace-grid .frame-16-9 .slide-layer {
+  padding: clamp(10px, 3cqw, 48px);
+}
+
+.workspace-grid .frame-16-9 .slide-episode-title {
+  font-size: clamp(1rem, 5cqw, 2.35rem);
+}
+
+.workspace-grid .frame-16-9 .slide-episode-date {
+  font-size: clamp(0.85rem, 3.8cqw, 1.55rem);
+}
+
+.workspace-grid .frame-16-9 .slide-role {
+  font-size: clamp(13px, 3.6cqw, 1.75rem);
+}
+
+.workspace-grid .frame-16-9 .slide-people {
+  font-size: clamp(12px, 3.4cqw, 1.65rem);
+}
+
 .episode-tray--staging {
   margin-bottom: 16px;
 }
@@ -1289,6 +1310,43 @@ select.remote-input {
 .player-shell--916 .playout-frame {
   width: min(100vw, calc(100vh * 9 / 16));
   height: min(100vh, calc(100vw * 16 / 9));
+}
+
+/* Browser player (no fixed HD canvas): slightly larger type than responsive clamps alone suggested. */
+.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .slide-episode-title {
+  font-size: clamp(1.25rem, 6.8cqw, 3.25rem);
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .slide-episode-date {
+  font-size: clamp(1.05rem, 5.2cqw, 2.2rem);
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .slide-role {
+  font-size: clamp(17px, 5.2cqw, 2.5rem);
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .slide-people {
+  font-size: clamp(15px, 4.9cqw, 2.25rem);
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .frame-9-16 .slide-episode-title {
+  font-size: clamp(1.05rem, 5.8cqh, 2.65rem);
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .frame-9-16 .slide-episode-date {
+  font-size: clamp(0.9rem, 4.2cqh, 1.9rem);
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .frame-9-16 .slide-role {
+  font-size: clamp(14px, 4.6cqh, 1.95rem);
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .frame-9-16 .slide-people {
+  font-size: clamp(13px, 4.3cqh, 1.85rem);
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .frame-9-16 .slide-empty {
+  font-size: clamp(12px, 3.4cqh, 1.1rem);
 }
 
 /*

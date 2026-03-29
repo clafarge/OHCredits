@@ -9,6 +9,8 @@
   const FADE_MS = 500;
   /** Full black before first slide content */
   const LEAD_BLACK_MS = 1000;
+  /** Hold on full black after the last slide fades out */
+  const OUT_BLACK_HOLD_MS = 1000;
 
   const EPISODE_ID = "__episode__";
   const PEOPLE_MAX_PER_GROUP = 12;
@@ -96,6 +98,8 @@
     const base = item.role || "—";
     if (item.kind === "customCard") return base;
     if (item.people.length <= 1) return base;
+    const norm = base.trim().toLowerCase().replace(/\s+/g, " ");
+    if (norm === "special thanks") return base;
     return pluralizeRolePhrase(base);
   }
 
@@ -188,9 +192,19 @@
           await sleep(FADE_MS);
         }
       }
+
+      if (!ac.signal.aborted && lastShownIndex >= 0) {
+        el.classList.add("is-hidden");
+        await sleep(FADE_MS);
+        if (!ac.signal.aborted) {
+          el.innerHTML = '<div class="oh-lead-black" aria-hidden="true"></div>';
+          el.classList.remove("is-hidden");
+          await sleep(OUT_BLACK_HOLD_MS);
+        }
+      }
     } finally {
       el.classList.remove("is-hidden");
-      if (slides.length && lastShownIndex >= 0) {
+      if (ac.signal.aborted && slides.length && lastShownIndex >= 0) {
         renderSlideInto(el, slides, lastShownIndex);
       }
     }
@@ -211,6 +225,7 @@
     DISPLAY_MS,
     FADE_MS,
     LEAD_BLACK_MS,
+    OUT_BLACK_HOLD_MS,
     EPISODE_ID,
     PEOPLE_MAX_PER_GROUP,
     sleep,

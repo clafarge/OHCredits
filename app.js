@@ -38,6 +38,14 @@
   const LINE_PX = 22;
   const ROLE_BLOCK_PX = 18;
   const BLOCK_GAP_PX = 14;
+  const STARTER_SHORT_ROLES_PER_PAGE = 3;
+
+  /** Map known abbreviations to full role titles when loading from JSON or custom cards. */
+  function roleDisplayNameFromJson(roleTrimmed) {
+    if (!roleTrimmed) return "";
+    if (/^psc$/i.test(roleTrimmed)) return "Pre-Show Coordinator";
+    return roleTrimmed;
+  }
 
   /** Next row index for `c-{n}-*` ids so merges stay compatible with groupItemOrderByCreditRow. */
   function nextCreditRowBaseIndex() {
@@ -70,7 +78,7 @@
           .map((p) => (typeof p === "string" ? p.trim() : String(p)))
           .filter(Boolean)
       );
-      const roleStr = role || "—";
+      const roleStr = role ? roleDisplayNameFromJson(role) : "—";
       const isCustomCard =
         row &&
         typeof row === "object" &&
@@ -370,18 +378,42 @@
   }
 
   /**
-   * Start a new page when adding the next role would exceed budget in either aspect.
-   * Compact one-line credits use the same ~3 roles/page balancing as starter short runs (not 4+2 from height).
-   * @param {string[]} orderedIds
+   * At most {@link STARTER_SHORT_ROLES_PER_PAGE} credit cards per page; n≡1 (mod 3), n≥4 → 2+2+…+3 pattern.
+   * @param {string[]} ids
+   * @returns {string[][]}
    */
-  function autoPaginateShared(orderedIds) {
-    if (!orderedIds.length) return [[]];
-    if (orderedIds.every(isCompactSingleLineCredit)) {
-      const runs = orderedIds.map((id) => ({ row: -1, ids: [id] }));
-      const balanced = paginateShortRunsThreePerPage(runs);
-      return balanced.length ? balanced : [[]];
+  function paginateIdsThreePerPage(ids) {
+    const n = ids.length;
+    if (n === 0) return [];
+    const per = STARTER_SHORT_ROLES_PER_PAGE;
+    /** @type {string[][]} */
+    const pageIdLists = [];
+    let i = 0;
+    if (n % per === 1 && n >= per + 1) {
+      const firstSize = 2;
+      pageIdLists.push(ids.slice(0, firstSize));
+      i = firstSize;
+      while (i < n) {
+        const take = Math.min(per, n - i);
+        pageIdLists.push(ids.slice(i, i + take));
+        i += take;
+      }
+      return pageIdLists;
     }
+    while (i < n) {
+      pageIdLists.push(ids.slice(i, i + per));
+      i += per;
+    }
+    return pageIdLists;
+  }
 
+  /**
+   * Height-based pages for non-compact or multi-line credits (both aspects must fit budget).
+   * @param {string[]} orderedIds
+   * @returns {string[][]}
+   */
+  function autoPaginateByHeight(orderedIds) {
+    if (!orderedIds.length) return [];
     const b169 = BUDGET_PX["169"];
     const b916 = BUDGET_PX["916"];
     /** @type {string[][]} */
@@ -405,6 +437,37 @@
       used916 += n916;
     }
     return out.length ? out : [[]];
+  }
+
+  /**
+   * Mix compact one-line credits (≤3 per page, balanced) with height-based segments. Without this, a single
+   * non-compact row (e.g. long names or many producers) forced height packing for the entire list and could
+   * squeeze four short roles onto one 16:9 page.
+   * @param {string[]} orderedIds
+   */
+  function autoPaginateShared(orderedIds) {
+    if (!orderedIds.length) return [[]];
+    /** @type {string[][]} */
+    const pages = [];
+    let idx = 0;
+    while (idx < orderedIds.length) {
+      let j = idx;
+      while (j < orderedIds.length && isCompactSingleLineCredit(orderedIds[j])) j++;
+      if (j > idx) {
+        for (const pg of paginateIdsThreePerPage(orderedIds.slice(idx, j))) {
+          if (pg.length) pages.push(pg);
+        }
+        idx = j;
+      }
+      if (idx >= orderedIds.length) break;
+      let k = idx;
+      while (k < orderedIds.length && !isCompactSingleLineCredit(orderedIds[k])) k++;
+      for (const pg of autoPaginateByHeight(orderedIds.slice(idx, k))) {
+        if (pg.length) pages.push(pg);
+      }
+      idx = k;
+    }
+    return pages.length ? pages : [[]];
   }
 
   /**
@@ -489,8 +552,6 @@
     return out;
   }
 
-  const STARTER_SHORT_ROLES_PER_PAGE = 3;
-
   /**
    * Short roles (1–2 names each): aim for {@link STARTER_SHORT_ROLES_PER_PAGE} roles per page.
    * When the count is 4,7,10,… (n≡1 mod 3, n≥4), use 2+2+…+3 pattern instead of 3+…+1 so pages stay even.
@@ -498,28 +559,7 @@
    * @returns {string[][]}
    */
   function paginateShortRunsThreePerPage(runs) {
-    const n = runs.length;
-    if (n === 0) return [];
-    const per = STARTER_SHORT_ROLES_PER_PAGE;
-    /** @type {string[][]} */
-    const pageIdLists = [];
-    let i = 0;
-    if (n % per === 1 && n >= per + 1) {
-      const firstSize = 2;
-      pageIdLists.push(flattenRuns(runs.slice(0, firstSize)));
-      i = firstSize;
-      while (i < n) {
-        const take = Math.min(per, n - i);
-        pageIdLists.push(flattenRuns(runs.slice(i, i + take)));
-        i += take;
-      }
-      return pageIdLists;
-    }
-    while (i < n) {
-      pageIdLists.push(flattenRuns(runs.slice(i, i + per)));
-      i += per;
-    }
-    return pageIdLists;
+    return paginateIdsThreePerPage(flattenRuns(runs));
   }
 
   /**
@@ -950,7 +990,8 @@
   }
 
   function addCustomCardToLayout() {
-    const role = (els.newCardRole && els.newCardRole.value.trim()) || "Card";
+    const rawRole = (els.newCardRole && els.newCardRole.value.trim()) || "";
+    const role = roleDisplayNameFromJson(rawRole) || (rawRole ? rawRole : "Card");
     const raw = (els.newCardBody && els.newCardBody.value.trim()) || "";
     let people = raw.split(/\n/).map((l) => l.trim()).filter(Boolean);
     if (people.length === 0) people = ["New card — add lines via design JSON or merge."];
