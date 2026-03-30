@@ -690,7 +690,8 @@ select.remote-input {
 }
 
 .slide-credit-gap {
-  height: 1.725em;
+  /* Space between credit blocks on slide playout (editor previews + player). Slightly generous vs 1.725em so it reads closer to page-organizer spacing. */
+  height: 2.15em;
   flex-shrink: 0;
 }
 
@@ -700,7 +701,7 @@ select.remote-input {
 
 .slide-episode-title {
   font-size: clamp(1.15rem, 6cqw, 3rem);
-  font-weight: 600;
+  font-weight: 400;
   color: var(--role);
   margin: 0 0 0.2em;
   line-height: 1.2;
@@ -708,13 +709,14 @@ select.remote-input {
 
 .slide-episode-date {
   font-size: clamp(0.95rem, 4.5cqw, 2rem);
+  font-weight: 400;
   color: var(--name);
   margin: 0;
 }
 
 .slide-role {
   font-size: clamp(15px, 4.5cqw, 2.125rem);
-  font-weight: 700;
+  font-weight: 400;
   color: var(--role);
   margin: 0 0 0.125em;
   line-height: 1.2;
@@ -727,7 +729,7 @@ select.remote-input {
   padding: 0;
   color: var(--name);
   font-size: clamp(14px, 4.2cqw, 2rem);
-  font-weight: 700;
+  font-weight: 400;
   line-height: 1.35;
 }
 
@@ -736,6 +738,7 @@ select.remote-input {
 }
 
 .slide-empty {
+  font-weight: 400;
   color: var(--text-muted);
   font-style: italic;
 }
@@ -1398,7 +1401,7 @@ select.remote-input {
 
 .player-body.player-body--hd1080 .slide-episode-title {
   font-size: 3.75rem;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .player-body.player-body--hd1080 .slide-episode-date {
@@ -1489,7 +1492,7 @@ select.remote-input {
 
 .player-body.player-body--hd4k .slide-episode-title {
   font-size: 7.5rem;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .player-body.player-body--hd4k .slide-episode-date {
