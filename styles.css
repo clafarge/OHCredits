@@ -830,7 +830,13 @@ select.remote-input {
 
 /* Editor workspace: 16:9 preview only — slightly smaller type vs default clamps so it compares better to broadcast. */
 .workspace-grid .frame-16-9 .slide-layer {
-  padding: clamp(10px, 3cqw, 48px);
+  padding: clamp(14px, 4.5cqw, 64px);
+}
+
+/* Zoom out slide content vs the frame so the preview matches how “full” real 16:9 playout looks. */
+.workspace-grid .frame-16-9 .slide-content {
+  transform: scale(0.87);
+  transform-origin: center center;
 }
 
 .workspace-grid .frame-16-9 .slide-episode-title {
