@@ -716,22 +716,42 @@ select.remote-input {
   object-fit: contain;
 }
 
+.slide-credit-img.slide-credit-img--zoom-thanks {
+  max-width: min(46cqw, 50%);
+}
+
 .frame-9-16 .slide-credit-img {
   max-width: min(88cqw, 100%);
   max-height: min(48cqh, 72%);
+}
+
+.frame-9-16 .slide-credit-img.slide-credit-img--zoom-thanks {
+  max-width: min(44cqw, 50%);
 }
 
 .workspace-grid .frame-16-9 .slide-credit-img {
   max-height: min(48cqh, 220px);
 }
 
+.workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--zoom-thanks {
+  max-width: 50%;
+}
+
 .workspace-grid .frame-9-16 .slide-credit-img {
   max-height: min(42cqh, 200px);
+}
+
+.workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--zoom-thanks {
+  max-width: 50%;
 }
 
 .page-box--organizer .slide-credit-img {
   max-width: 100%;
   max-height: 120px;
+}
+
+.page-box--organizer .slide-credit-img.slide-credit-img--zoom-thanks {
+  max-width: 50%;
 }
 
 .slide-episode-title {

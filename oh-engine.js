@@ -6,6 +6,8 @@
   "use strict";
 
   const DISPLAY_MS = 5000;
+  /** Final slide holds longer before end fade-to-black */
+  const LAST_SLIDE_DISPLAY_MS = 10000;
   const FADE_MS = 500;
   /** Full black before first slide content */
   const LEAD_BLACK_MS = 1000;
@@ -112,9 +114,11 @@
 
   function creditInnerHtml(item) {
     if (item.kind === "imageCard" && typeof item.src === "string" && item.src.trim()) {
-      const src = escapeHtml(item.src.trim());
+      const rawSrc = item.src.trim();
+      const src = escapeHtml(rawSrc);
       const alt = typeof item.alt === "string" ? escapeHtml(item.alt) : "";
-      return `<div class="slide-credit-inner slide-credit-inner--image"><img class="slide-credit-img" src="${src}" alt="${alt}" decoding="async" /></div>`;
+      const zoomCls = /ZoomThanks\.png/i.test(rawSrc) ? " slide-credit-img--zoom-thanks" : "";
+      return `<div class="slide-credit-inner slide-credit-inner--image"><img class="slide-credit-img${zoomCls}" src="${src}" alt="${alt}" decoding="async" /></div>`;
     }
     const roleHtml = escapeHtml(roleForDisplay(item));
     const cardClass = item.kind === "customCard" ? " slide-credit-block--custom-card" : "";
@@ -196,7 +200,8 @@
         await sleep(FADE_MS);
 
         if (ac.signal.aborted) break;
-        await sleep(DISPLAY_MS);
+        const holdMs = i === slides.length - 1 ? LAST_SLIDE_DISPLAY_MS : DISPLAY_MS;
+        await sleep(holdMs);
         if (ac.signal.aborted) break;
 
         const hasNext = i < slides.length - 1;
@@ -236,6 +241,7 @@
 
   window.OHCreditsEngine = {
     DISPLAY_MS,
+    LAST_SLIDE_DISPLAY_MS,
     FADE_MS,
     LEAD_BLACK_MS,
     OUT_BLACK_HOLD_MS,
