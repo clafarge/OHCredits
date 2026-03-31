@@ -15,6 +15,9 @@
   const EPISODE_ID = "__episode__";
   /** Episode JSON field `Tláloc Traversal` becomes its own draggable credit card. */
   const TLALOC_ID = "__tlaloc__";
+  /** Default closing slides: branded image cards (paths relative to site root). */
+  const IMAGE_ZOOM_THANKS_ID = "__img_zoom_thanks__";
+  const IMAGE_OH_TITLE_ID = "__img_oh_title__";
   const PEOPLE_MAX_PER_GROUP = 12;
 
   function sleep(ms) {
@@ -97,21 +100,29 @@
   }
 
   function roleForDisplay(item) {
+    if (item.kind === "imageCard") return "";
     const base = item.role || "—";
     if (item.kind === "customCard") return base;
-    if (item.people.length <= 1) return base;
+    const people = Array.isArray(item.people) ? item.people : [];
+    if (people.length <= 1) return base;
     const norm = base.trim().toLowerCase().replace(/\s+/g, " ");
     if (norm === "special thanks" || norm === "tláloc traversal") return base;
     return pluralizeRolePhrase(base);
   }
 
   function creditInnerHtml(item) {
+    if (item.kind === "imageCard" && typeof item.src === "string" && item.src.trim()) {
+      const src = escapeHtml(item.src.trim());
+      const alt = typeof item.alt === "string" ? escapeHtml(item.alt) : "";
+      return `<div class="slide-credit-inner slide-credit-inner--image"><img class="slide-credit-img" src="${src}" alt="${alt}" decoding="async" /></div>`;
+    }
     const roleHtml = escapeHtml(roleForDisplay(item));
     const cardClass = item.kind === "customCard" ? " slide-credit-block--custom-card" : "";
-    if (item.people.length === 0) {
+    const people = Array.isArray(item.people) ? item.people : [];
+    if (people.length === 0) {
       return `<div class="slide-credit-inner${cardClass}"><h2 class="slide-role">${roleHtml}</h2><p class="slide-empty">No lines yet</p></div>`;
     }
-    const list = `<ul class="slide-people">${item.people.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`;
+    const list = `<ul class="slide-people">${people.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`;
     return `<div class="slide-credit-inner${cardClass}"><h2 class="slide-role">${roleHtml}</h2>${list}</div>`;
   }
 
@@ -230,6 +241,8 @@
     OUT_BLACK_HOLD_MS,
     EPISODE_ID,
     TLALOC_ID,
+    IMAGE_ZOOM_THANKS_ID,
+    IMAGE_OH_TITLE_ID,
     PEOPLE_MAX_PER_GROUP,
     sleep,
     escapeHtml,

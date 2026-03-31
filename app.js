@@ -6,6 +6,8 @@
 
   const EPISODE_ID = OH.EPISODE_ID;
   const TLALOC_ID = OH.TLALOC_ID;
+  const IMAGE_ZOOM_THANKS_ID = OH.IMAGE_ZOOM_THANKS_ID;
+  const IMAGE_OH_TITLE_ID = OH.IMAGE_OH_TITLE_ID;
   const PEOPLE_MAX_PER_GROUP = OH.PEOPLE_MAX_PER_GROUP;
 
   const LS_REMOTE_EVENT = "ohcredits_remote_event";
@@ -341,13 +343,18 @@
    * @param {'169'|'916'} aspect
    */
   function estimateItemPx(item, aspect) {
+    if (item && item.kind === "imageCard") {
+      const scale = aspect === "916" ? 13 / 17 : 1;
+      return Math.round(320 * scale);
+    }
     const cpl = CPL[aspect];
     const scale = aspect === "916" ? 13 / 17 : 1;
     let h = ROLE_BLOCK_PX * scale;
     const line = LINE_PX * scale;
-    if (item.people.length === 0) h += line;
+    const people = Array.isArray(item.people) ? item.people : [];
+    if (people.length === 0) h += line;
     else {
-      for (const p of item.people) {
+      for (const p of people) {
         const lines = Math.max(1, Math.ceil(p.length / cpl));
         h += lines * line;
       }
@@ -372,6 +379,7 @@
   function isCompactSingleLineCredit(id) {
     const item = itemsById.get(id);
     if (!item) return false;
+    if (item.kind === "imageCard") return false;
     if (item.people.length > 2) return false;
     const narrowCpl = CPL["916"];
     for (const p of item.people) {
@@ -644,9 +652,50 @@
     return p;
   }
 
+  function defaultClosingImageItems() {
+    return [
+      [
+        IMAGE_ZOOM_THANKS_ID,
+        {
+          kind: "imageCard",
+          role: "",
+          people: [],
+          src: "images/ZoomThanks.png",
+          alt: "Powered by Zoom — Webinars & Events",
+        },
+      ],
+      [
+        IMAGE_OH_TITLE_ID,
+        {
+          kind: "imageCard",
+          role: "",
+          people: [],
+          src: "images/OHTitle.png",
+          alt: "Office Hours",
+        },
+      ],
+    ];
+  }
+
+  /** After a full JSON replace, append Zoom thanks + OH title as the last two pages (merge does not add them). */
+  function appendDefaultClosingImagePages() {
+    for (const [cardId, cardItem] of defaultClosingImageItems()) {
+      itemsById.set(cardId, cardItem);
+    }
+    const blankLead = pages.length === 1 && pages[0].length === 0;
+    if (blankLead && !episodeHtml) {
+      pages = [[IMAGE_ZOOM_THANKS_ID], [IMAGE_OH_TITLE_ID]];
+    } else {
+      pages.push([IMAGE_ZOOM_THANKS_ID]);
+      pages.push([IMAGE_OH_TITLE_ID]);
+    }
+    pages = normalizePages(pages);
+  }
+
   function creditBlockHtml(item, id) {
     const safeId = OH.escapeHtml(id);
-    return `<div class="slide-credit-block credit-draggable credit-draggable--with-controls" draggable="true" data-credit-id="${safeId}">
+    const imageCls = item.kind === "imageCard" ? " slide-credit-block--image-card" : "";
+    return `<div class="slide-credit-block credit-draggable credit-draggable--with-controls${imageCls}" draggable="true" data-credit-id="${safeId}">
       <button type="button" class="credit-card-remove" data-remove-credit="${safeId}" draggable="false" aria-label="Remove this card from the design" title="Remove">×</button>
       <div class="credit-draggable-body">${OH.creditInnerHtml(item)}</div>
     </div>`;
@@ -892,9 +941,10 @@
         } else {
           pages = [[]];
         }
+        appendDefaultClosingImagePages();
         syncTlalocParkedState();
         report(
-          `${n} credit block(s) · ${pages.length} page(s) · long roles split into ≤${PEOPLE_MAX_PER_GROUP} names per block; drag each block separately.${layoutNote}`,
+          `${n} credit block(s) · ${pages.length} page(s) · long roles split into ≤${PEOPLE_MAX_PER_GROUP} names per block; closing slides add Zoom thanks + Office Hours images on the last two pages.${layoutNote}`,
           "ok"
         );
       } else {
