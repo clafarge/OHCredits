@@ -30,8 +30,8 @@
   /** `episode` JSON key for Tláloc Traversal line on the title card (label fixed; value from JSON). */
   const EPISODE_TLALOC_KEY = "Tláloc Traversal";
 
-  /** If the last Contributors page has fewer than this many names, Tláloc sits on that page; else its own page before Zoom thanks. */
-  const TLALOC_MAX_NAMES_ON_CONTRIB_PAGE = 10;
+  /** If the last Special Thanks page has fewer than this many names, Tláloc sits on that page; else its own page before Zoom thanks. */
+  const TLALOC_MAX_NAMES_ON_SPECIAL_THANKS_PAGE = 10;
 
   /**
    * Usable vertical space (px) per page at playout scale — tuned so ~3 simple credits
@@ -680,32 +680,32 @@
     ];
   }
 
-  function isContributorCreditItem(item) {
+  function isSpecialThanksCreditItem(item) {
     if (!item || item.kind === "imageCard") return false;
     const k = normalizeRoleKey(item.role);
-    return k === "contributor" || k === "contributors";
+    return k === "special thanks";
   }
 
-  function contributorNameCountOnPage(pageIds) {
+  function specialThanksNameCountOnPage(pageIds) {
     let n = 0;
     for (const id of pageIds) {
       const it = itemsById.get(id);
-      if (!isContributorCreditItem(it)) continue;
+      if (!isSpecialThanksCreditItem(it)) continue;
       const people = Array.isArray(it.people) ? it.people : [];
       n += people.length;
     }
     return n;
   }
 
-  function findLastContributorPageIndex() {
+  function findLastSpecialThanksPageIndex() {
     for (let pi = pages.length - 1; pi >= 0; pi--) {
-      if (pages[pi].some((id) => isContributorCreditItem(itemsById.get(id)))) return pi;
+      if (pages[pi].some((id) => isSpecialThanksCreditItem(itemsById.get(id)))) return pi;
     }
     return -1;
   }
 
   /**
-   * Full replace only: put Tláloc on the last Contributors page if that page has &lt;10 contributor names;
+   * Full replace only: put Tláloc on the last Special Thanks page if that page has &lt;10 names;
    * otherwise a solo page before closing image slides. Stays in tray if no episode Tláloc field.
    */
   function placeDefaultTlalocOnPages() {
@@ -713,13 +713,13 @@
     stripTlalocFromPages();
     parkedIds = parkedIds.filter((id) => id !== TLALOC_ID);
 
-    const contribPi = findLastContributorPageIndex();
-    if (contribPi === -1) {
+    const thanksPi = findLastSpecialThanksPageIndex();
+    if (thanksPi === -1) {
       pages.push([TLALOC_ID]);
     } else {
-      const nameCount = contributorNameCountOnPage(pages[contribPi]);
-      if (nameCount < TLALOC_MAX_NAMES_ON_CONTRIB_PAGE) {
-        pages[contribPi] = [...pages[contribPi], TLALOC_ID];
+      const nameCount = specialThanksNameCountOnPage(pages[thanksPi]);
+      if (nameCount < TLALOC_MAX_NAMES_ON_SPECIAL_THANKS_PAGE) {
+        pages[thanksPi] = [...pages[thanksPi], TLALOC_ID];
       } else {
         pages.push([TLALOC_ID]);
       }
