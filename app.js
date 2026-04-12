@@ -2086,6 +2086,39 @@
 
   applyViewFromQuery();
 
+  /**
+   * Deep link from PL Tools: `?FromPLTools=1` opens the JSON panel, pastes clipboard after 500ms,
+   * focuses the textarea, then runs Add JSON after another 500ms.
+   */
+  function maybeAutoloadFromClipboardForPlTools() {
+    const p = new URLSearchParams(window.location.search);
+    const flag = p.get("FromPLTools") ?? p.get("frompltools");
+    if (String(flag || "").trim() !== "1") return;
+    if (!els.toggleJson || !els.jsonPanel || !els.jsonInput || !els.btnAddJson) return;
+
+    const stepMs = 500;
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    void (async () => {
+      els.toggleJson.click();
+      await wait(stepMs);
+      let text = "";
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.readText === "function") {
+          text = await navigator.clipboard.readText();
+        }
+      } catch {
+        /* Clipboard may require permission or a user gesture — field stays empty. */
+      }
+      if (text) els.jsonInput.value = text;
+      els.jsonInput.focus();
+      await wait(stepMs);
+      els.btnAddJson.click();
+    })();
+  }
+
+  maybeAutoloadFromClipboardForPlTools();
+
   try {
     localStorage.removeItem(LS_REMOTE_FN_LEGACY);
   } catch {
