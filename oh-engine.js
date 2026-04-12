@@ -124,7 +124,13 @@
     const people = Array.isArray(item.people) ? item.people : [];
     if (people.length <= 1) return base;
     const norm = base.trim().toLowerCase().replace(/\s+/g, " ");
-    if (norm === "special thanks" || norm === "tláloc traversal") return base;
+    if (
+      norm === "special thanks" ||
+      norm === "tláloc traversal" ||
+      norm === "contributing producers" ||
+      norm === "contributing producer"
+    )
+      return base;
     return pluralizeRolePhrase(base);
   }
 

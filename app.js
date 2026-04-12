@@ -30,8 +30,8 @@
   /** `episode` JSON key for Tláloc Traversal line on the title card (label fixed; value from JSON). */
   const EPISODE_TLALOC_KEY = "Tláloc Traversal";
 
-  /** If the last Contributors page has fewer than this many contributor names, Tláloc sits on that page; else its own page before Zoom thanks. */
-  const TLALOC_MAX_NAMES_ON_CONTRIB_PAGE = 10;
+  /** If the last Contributing Producers page has fewer than this many names, Tláloc sits on that page; else its own page before Zoom thanks. */
+  const TLALOC_MAX_NAMES_ON_PRODUCERS_PAGE = 10;
 
   /**
    * Usable vertical space (px) per page at playout scale — tuned so ~3 simple credits
@@ -81,17 +81,31 @@
   }
 
   /**
+   * Contributing Producers credits (and legacy "Contributor(s)" labels) share layout + Tláloc rules.
+   * @param {string} normalizedKey from {@link normalizeRoleKey}
+   */
+  function isContributingProducersRoleKey(normalizedKey) {
+    const k = normalizedKey;
+    return (
+      k === "contributing producers" ||
+      k === "contributing producer" ||
+      k === "contributor" ||
+      k === "contributors"
+    );
+  }
+
+  /**
    * @param {unknown[]} credits
    * @param {number} baseRowIndex First JSON row maps to this credit row index (0 for a fresh replace).
-   * @param {number} [contributorChunkMax] Contributor rows only: max names per credit block (default engine max).
+   * @param {number} [producersChunkMax] Contributing Producers rows only: max names per credit block (default engine max).
    * @returns {{ items: Map<string, { role: string, people: string[] }>, order: string[] }}
    */
-  function buildCreditItemsMap(credits, baseRowIndex, contributorChunkMax) {
+  function buildCreditItemsMap(credits, baseRowIndex, producersChunkMax) {
     const items = new Map();
     /** @type {string[]} */
     const order = [];
-    const contribCap =
-      contributorChunkMax == null ? OH.PEOPLE_MAX_PER_GROUP : Math.max(1, Math.floor(contributorChunkMax));
+    const producersCap =
+      producersChunkMax == null ? OH.PEOPLE_MAX_PER_GROUP : Math.max(1, Math.floor(producersChunkMax));
     for (let i = 0; i < credits.length; i++) {
       const row = credits[i];
       if (!row || typeof row !== "object") continue;
@@ -107,8 +121,8 @@
         typeof row === "object" &&
         /** @type {{ kind?: string }} */ (row).kind === "customCard";
       const rk = normalizeRoleKey(role);
-      const isContributor = rk === "contributor" || rk === "contributors";
-      const groups = isContributor ? OH.chunkPeopleGroupsWithMax(names, contribCap) : OH.chunkPeopleGroups(names);
+      const isProducers = isContributingProducersRoleKey(rk);
+      const groups = isProducers ? OH.chunkPeopleGroupsWithMax(names, producersCap) : OH.chunkPeopleGroups(names);
 
       function pushPeopleImageCard(pathStr, imgIdx) {
         const id = `c-${rowIndex}-img${imgIdx}`;
@@ -616,7 +630,7 @@
     /** @type {{ row: number, ids: string[] }[]} */
     const panelists = [];
     /** @type {{ row: number, ids: string[] }[]} */
-    const contributors = [];
+    const contributingProducers = [];
     /** @type {{ row: number, ids: string[] }[]} */
     const shortRuns = [];
     /** @type {{ row: number, ids: string[] }[]} */
@@ -633,7 +647,7 @@
       if (key === "host") host.push(run);
       else if (key === "reader") reader.push(run);
       else if (key === "panelist" || key === "panelists") panelists.push(run);
-      else if (key === "contributor" || key === "contributors") contributors.push(run);
+      else if (isContributingProducersRoleKey(key)) contributingProducers.push(run);
       else if (key === "special thanks") closingRuns.push(run);
       else if (tp <= 2) shortRuns.push(run);
       else largeRuns.push(run);
@@ -652,8 +666,8 @@
 
     if (!mergePanelOnPage1 && panelIds.length) pages.push(panelIds);
 
-    const contribIds = flattenRuns(contributors);
-    if (contribIds.length) pages.push(...autoPaginateShared(contribIds));
+    const producerIds = flattenRuns(contributingProducers);
+    if (producerIds.length) pages.push(...autoPaginateShared(producerIds));
 
     for (const idPage of paginateShortRunsThreePerPage(shortRuns)) {
       if (idPage.length) pages.push(idPage);
@@ -704,44 +718,44 @@
     ];
   }
 
-  /** Any credit for a contributor/contributors role (including people-image rows under that role). */
-  function isContributorRoleItem(item) {
+  /** Any credit for Contributing Producers (or legacy Contributor(s)) including people-image rows under that role. */
+  function isContributingProducersRoleItem(item) {
     if (!item || item.kind === "imageCard") return false;
-    const k = normalizeRoleKey(item.role);
-    return k === "contributor" || k === "contributors";
+    return isContributingProducersRoleKey(normalizeRoleKey(item.role));
   }
 
-  /** Contributor name lines only (image paths under that role do not count toward the Tláloc room heuristic). */
-  function contributorNameCountOnPage(pageIds) {
+  /** Name lines on Contributing Producers text cards only (image paths under that role do not count toward the Tláloc room heuristic). */
+  function contributingProducersNameCountOnPage(pageIds) {
     let n = 0;
     for (const id of pageIds) {
       const it = itemsById.get(id);
       if (!it || it.kind === "peopleImage" || it.kind === "imageCard") continue;
-      if (!isContributorRoleItem(it)) continue;
+      if (!isContributingProducersRoleItem(it)) continue;
       const people = Array.isArray(it.people) ? it.people : [];
       n += people.length;
     }
     return n;
   }
 
-  function findLastContributorPageIndex() {
+  function findLastContributingProducersPageIndex() {
     for (let pi = pages.length - 1; pi >= 0; pi--) {
-      if (pages[pi].some((id) => isContributorRoleItem(itemsById.get(id)))) return pi;
+      if (pages[pi].some((id) => isContributingProducersRoleItem(itemsById.get(id)))) return pi;
     }
     return -1;
   }
 
-  /** Name count on contributor text cards only, for the last layout page that includes any contributor-role content. */
-  function lastContributorPageNameCount(layoutPages) {
+  /** Name count on producer text cards only, for the last layout page that includes any Contributing Producers content. */
+  function lastContributingProducersPageNameCount(layoutPages) {
     for (let pi = layoutPages.length - 1; pi >= 0; pi--) {
       const pg = layoutPages[pi];
-      if (pg.some((id) => isContributorRoleItem(itemsById.get(id)))) return contributorNameCountOnPage(pg);
+      if (pg.some((id) => isContributingProducersRoleItem(itemsById.get(id))))
+        return contributingProducersNameCountOnPage(pg);
     }
     return 0;
   }
 
   /**
-   * Full replace only: put Tláloc on the last Contributors page if that page has &lt;10 contributor names;
+   * Full replace only: put Tláloc on the last Contributing Producers page if that page has &lt;10 names;
    * otherwise a solo page before closing image slides. Stays in tray if no episode Tláloc field.
    */
   function placeDefaultTlalocOnPages() {
@@ -749,13 +763,13 @@
     stripTlalocFromPages();
     parkedIds = parkedIds.filter((id) => id !== TLALOC_ID);
 
-    const contribPi = findLastContributorPageIndex();
-    if (contribPi === -1) {
+    const prodPi = findLastContributingProducersPageIndex();
+    if (prodPi === -1) {
       pages.push([TLALOC_ID]);
     } else {
-      const nameCount = contributorNameCountOnPage(pages[contribPi]);
-      if (nameCount < TLALOC_MAX_NAMES_ON_CONTRIB_PAGE) {
-        pages[contribPi] = [...pages[contribPi], TLALOC_ID];
+      const nameCount = contributingProducersNameCountOnPage(pages[prodPi]);
+      if (nameCount < TLALOC_MAX_NAMES_ON_PRODUCERS_PAGE) {
+        pages[prodPi] = [...pages[prodPi], TLALOC_ID];
       } else {
         pages.push([TLALOC_ID]);
       }
@@ -906,9 +920,9 @@
   /**
    * @param {string} text
    * @param {boolean} merge
-   * @param {number} [contributorChunkMax] When set, contributor/contributors rows split with this max names per block.
+   * @param {number} [producersChunkMax] When set, Contributing Producers rows split with this max names per block.
    */
-  function parseCreditsPayload(text, merge, contributorChunkMax) {
+  function parseCreditsPayload(text, merge, producersChunkMax) {
     const data = JSON.parse(text);
     if (!data || typeof data !== "object") throw new Error("Root must be an object");
 
@@ -940,8 +954,8 @@
     }
 
     const baseRow = merge ? nextCreditRowBaseIndex() : 0;
-    const contribArg = merge ? undefined : contributorChunkMax;
-    const { items, order } = buildCreditItemsMap(credits, baseRow, contribArg);
+    const producersArg = merge ? undefined : producersChunkMax;
+    const { items, order } = buildCreditItemsMap(credits, baseRow, producersArg);
 
     if (order.length === 0 && !epHtml && !tlalocValue) {
       if (!merge || !episodeKeyInJson) {
@@ -1036,14 +1050,18 @@
       /** @type {ReturnType<typeof parseCreditsPayload>} */
       let parsed;
       if (!merging) {
-        let contribMax = OH.PEOPLE_MAX_PER_GROUP;
+        let producersMax = OH.PEOPLE_MAX_PER_GROUP;
         for (;;) {
-          parsed = parseCreditsPayload(t, merging, contribMax);
+          parsed = parseCreditsPayload(t, merging, producersMax);
           if (!parsed.itemOrder.length) break;
           itemsById = parsed.items;
           const pagesProbe = layoutPagesForOrder(parsed.itemOrder, parsed.designerPageHint);
-          if (lastContributorPageNameCount(pagesProbe) < TLALOC_MAX_NAMES_ON_CONTRIB_PAGE || contribMax <= 1) break;
-          contribMax -= 1;
+          if (
+            lastContributingProducersPageNameCount(pagesProbe) < TLALOC_MAX_NAMES_ON_PRODUCERS_PAGE ||
+            producersMax <= 1
+          )
+            break;
+          producersMax -= 1;
         }
       } else {
         parsed = parseCreditsPayload(t, merging);
@@ -1052,7 +1070,7 @@
       const hint = parsed.designerPageHint;
       const layoutNote =
         hint === "starter-v2"
-          ? " Starter layout v2: Host+Reader (Panelists if fewer than 7 names), Contributors, then ~3 short roles (1-2 names) per page, large groups, thanks."
+          ? " Starter layout v2: Host+Reader (Panelists if fewer than 7 names), Contributing Producers, then ~3 short roles (1-2 names) per page, large groups, thanks."
           : hint === "starter-v1"
             ? " Starter page layout (Host+Reader, ~3 roles/page, heavy lists then thanks)."
             : "";
