@@ -30,8 +30,8 @@
   /** `episode` JSON key for Tláloc Traversal line on the title card (label fixed; value from JSON). */
   const EPISODE_TLALOC_KEY = "Tláloc Traversal";
 
-  /** If the last Special Thanks page has fewer than this many names, Tláloc sits on that page; else its own page before Zoom thanks. */
-  const TLALOC_MAX_NAMES_ON_SPECIAL_THANKS_PAGE = 10;
+  /** If the last Contributors page has fewer than this many contributor names, Tláloc sits on that page; else its own page before Zoom thanks. */
+  const TLALOC_MAX_NAMES_ON_CONTRIB_PAGE = 10;
 
   /**
    * Usable vertical space (px) per page at playout scale — tuned so ~3 simple credits
@@ -66,15 +66,32 @@
     return max + 1;
   }
 
+  function partitionPeopleStringsForImages(people) {
+    /** @type {string[]} */
+    const text = [];
+    /** @type {string[]} */
+    const images = [];
+    for (const p of people) {
+      const s = typeof p === "string" ? p.trim() : String(p).trim();
+      if (!s) continue;
+      if (OH.looksLikeImagePathPeopleValue(s)) images.push(s);
+      else text.push(s);
+    }
+    return { text, images };
+  }
+
   /**
    * @param {unknown[]} credits
    * @param {number} baseRowIndex First JSON row maps to this credit row index (0 for a fresh replace).
+   * @param {number} [contributorChunkMax] Contributor rows only: max names per credit block (default engine max).
    * @returns {{ items: Map<string, { role: string, people: string[] }>, order: string[] }}
    */
-  function buildCreditItemsMap(credits, baseRowIndex) {
+  function buildCreditItemsMap(credits, baseRowIndex, contributorChunkMax) {
     const items = new Map();
     /** @type {string[]} */
     const order = [];
+    const contribCap =
+      contributorChunkMax == null ? OH.PEOPLE_MAX_PER_GROUP : Math.max(1, Math.floor(contributorChunkMax));
     for (let i = 0; i < credits.length; i++) {
       const row = credits[i];
       if (!row || typeof row !== "object") continue;
@@ -82,18 +99,24 @@
       const role = typeof row.role === "string" ? row.role.trim() : "";
       let people = row.people;
       if (!Array.isArray(people)) people = [];
-      const names = OH.sortPeopleNames(
-        people
-          .map((p) => (typeof p === "string" ? p.trim() : String(p)))
-          .filter(Boolean)
-      );
+      const { text: textRaw, images: imagePaths } = partitionPeopleStringsForImages(people);
+      const names = OH.sortPeopleNames(textRaw);
       const roleStr = role ? roleDisplayNameFromJson(role) : "—";
       const isCustomCard =
         row &&
         typeof row === "object" &&
         /** @type {{ kind?: string }} */ (row).kind === "customCard";
-      const groups = OH.chunkPeopleGroups(names);
-      if (groups.length === 0) {
+      const rk = normalizeRoleKey(role);
+      const isContributor = rk === "contributor" || rk === "contributors";
+      const groups = isContributor ? OH.chunkPeopleGroupsWithMax(names, contribCap) : OH.chunkPeopleGroups(names);
+
+      function pushPeopleImageCard(pathStr, imgIdx) {
+        const id = `c-${rowIndex}-img${imgIdx}`;
+        items.set(id, { role: roleStr, people: [pathStr], kind: "peopleImage" });
+        order.push(id);
+      }
+
+      if (groups.length === 0 && imagePaths.length === 0) {
         const id = `c-${rowIndex}-0`;
         items.set(
           id,
@@ -109,6 +132,7 @@
           );
           order.push(id);
         });
+        imagePaths.forEach((pathStr, ii) => pushPeopleImageCard(pathStr, ii));
       }
     }
     return { items, order };
@@ -346,7 +370,7 @@
    * @param {'169'|'916'} aspect
    */
   function estimateItemPx(item, aspect) {
-    if (item && item.kind === "imageCard") {
+    if (item && (item.kind === "imageCard" || item.kind === "peopleImage")) {
       const scale = aspect === "916" ? 13 / 17 : 1;
       return Math.round(320 * scale);
     }
@@ -382,7 +406,7 @@
   function isCompactSingleLineCredit(id) {
     const item = itemsById.get(id);
     if (!item) return false;
-    if (item.kind === "imageCard") return false;
+    if (item.kind === "imageCard" || item.kind === "peopleImage") return false;
     if (item.people.length > 2) return false;
     const narrowCpl = CPL["916"];
     for (const p of item.people) {
@@ -680,32 +704,44 @@
     ];
   }
 
-  function isSpecialThanksCreditItem(item) {
+  /** Any credit for a contributor/contributors role (including people-image rows under that role). */
+  function isContributorRoleItem(item) {
     if (!item || item.kind === "imageCard") return false;
     const k = normalizeRoleKey(item.role);
-    return k === "special thanks";
+    return k === "contributor" || k === "contributors";
   }
 
-  function specialThanksNameCountOnPage(pageIds) {
+  /** Contributor name lines only (image paths under that role do not count toward the Tláloc room heuristic). */
+  function contributorNameCountOnPage(pageIds) {
     let n = 0;
     for (const id of pageIds) {
       const it = itemsById.get(id);
-      if (!isSpecialThanksCreditItem(it)) continue;
+      if (!it || it.kind === "peopleImage" || it.kind === "imageCard") continue;
+      if (!isContributorRoleItem(it)) continue;
       const people = Array.isArray(it.people) ? it.people : [];
       n += people.length;
     }
     return n;
   }
 
-  function findLastSpecialThanksPageIndex() {
+  function findLastContributorPageIndex() {
     for (let pi = pages.length - 1; pi >= 0; pi--) {
-      if (pages[pi].some((id) => isSpecialThanksCreditItem(itemsById.get(id)))) return pi;
+      if (pages[pi].some((id) => isContributorRoleItem(itemsById.get(id)))) return pi;
     }
     return -1;
   }
 
+  /** Name count on contributor text cards only, for the last layout page that includes any contributor-role content. */
+  function lastContributorPageNameCount(layoutPages) {
+    for (let pi = layoutPages.length - 1; pi >= 0; pi--) {
+      const pg = layoutPages[pi];
+      if (pg.some((id) => isContributorRoleItem(itemsById.get(id)))) return contributorNameCountOnPage(pg);
+    }
+    return 0;
+  }
+
   /**
-   * Full replace only: put Tláloc on the last Special Thanks page if that page has &lt;10 names;
+   * Full replace only: put Tláloc on the last Contributors page if that page has &lt;10 contributor names;
    * otherwise a solo page before closing image slides. Stays in tray if no episode Tláloc field.
    */
   function placeDefaultTlalocOnPages() {
@@ -713,17 +749,40 @@
     stripTlalocFromPages();
     parkedIds = parkedIds.filter((id) => id !== TLALOC_ID);
 
-    const thanksPi = findLastSpecialThanksPageIndex();
-    if (thanksPi === -1) {
+    const contribPi = findLastContributorPageIndex();
+    if (contribPi === -1) {
       pages.push([TLALOC_ID]);
     } else {
-      const nameCount = specialThanksNameCountOnPage(pages[thanksPi]);
-      if (nameCount < TLALOC_MAX_NAMES_ON_SPECIAL_THANKS_PAGE) {
-        pages[thanksPi] = [...pages[thanksPi], TLALOC_ID];
+      const nameCount = contributorNameCountOnPage(pages[contribPi]);
+      if (nameCount < TLALOC_MAX_NAMES_ON_CONTRIB_PAGE) {
+        pages[contribPi] = [...pages[contribPi], TLALOC_ID];
       } else {
         pages.push([TLALOC_ID]);
       }
     }
+    pages = normalizePages(pages);
+  }
+
+  /** Pull JSON-driven people-image credits into solo pages immediately before default closing image slides. */
+  function hoistPeopleImagePagesBeforeClosing() {
+    /** @type {string[]} */
+    const ordered = [];
+    for (const pg of pages) {
+      for (const id of pg) {
+        const it = itemsById.get(id);
+        if (it && it.kind === "peopleImage") ordered.push(id);
+      }
+    }
+    if (!ordered.length) return;
+    for (const pg of pages) {
+      for (let i = pg.length - 1; i >= 0; i--) {
+        const it = itemsById.get(pg[i]);
+        if (it && it.kind === "peopleImage") pg.splice(i, 1);
+      }
+    }
+    pages = pages.filter((pg) => pg.length > 0);
+    for (const id of ordered) pages.push([id]);
+    if (pages.length === 0) pages = [[]];
     pages = normalizePages(pages);
   }
 
@@ -744,7 +803,8 @@
 
   function creditBlockHtml(item, id) {
     const safeId = OH.escapeHtml(id);
-    const imageCls = item.kind === "imageCard" ? " slide-credit-block--image-card" : "";
+    const imageCls =
+      item.kind === "imageCard" || item.kind === "peopleImage" ? " slide-credit-block--image-card" : "";
     return `<div class="slide-credit-block credit-draggable credit-draggable--with-controls${imageCls}" draggable="true" data-credit-id="${safeId}">
       <button type="button" class="credit-card-remove" data-remove-credit="${safeId}" draggable="false" aria-label="Remove this card from the design" title="Remove">×</button>
       <div class="credit-draggable-body">${OH.creditInnerHtml(item)}</div>
@@ -843,7 +903,12 @@
    * @param {string} text
    * @param {boolean} merge When true, use unique row ids so new credits can be appended to itemsById.
    */
-  function parseCreditsPayload(text, merge) {
+  /**
+   * @param {string} text
+   * @param {boolean} merge
+   * @param {number} [contributorChunkMax] When set, contributor/contributors rows split with this max names per block.
+   */
+  function parseCreditsPayload(text, merge, contributorChunkMax) {
     const data = JSON.parse(text);
     if (!data || typeof data !== "object") throw new Error("Root must be an object");
 
@@ -875,7 +940,8 @@
     }
 
     const baseRow = merge ? nextCreditRowBaseIndex() : 0;
-    const { items, order } = buildCreditItemsMap(credits, baseRow);
+    const contribArg = merge ? undefined : contributorChunkMax;
+    const { items, order } = buildCreditItemsMap(credits, baseRow, contribArg);
 
     if (order.length === 0 && !epHtml && !tlalocValue) {
       if (!merge || !episodeKeyInJson) {
@@ -967,7 +1033,21 @@
     }
     const merging = hasExistingDesign();
     try {
-      const parsed = parseCreditsPayload(t, merging);
+      /** @type {ReturnType<typeof parseCreditsPayload>} */
+      let parsed;
+      if (!merging) {
+        let contribMax = OH.PEOPLE_MAX_PER_GROUP;
+        for (;;) {
+          parsed = parseCreditsPayload(t, merging, contribMax);
+          if (!parsed.itemOrder.length) break;
+          itemsById = parsed.items;
+          const pagesProbe = layoutPagesForOrder(parsed.itemOrder, parsed.designerPageHint);
+          if (lastContributorPageNameCount(pagesProbe) < TLALOC_MAX_NAMES_ON_CONTRIB_PAGE || contribMax <= 1) break;
+          contribMax -= 1;
+        }
+      } else {
+        parsed = parseCreditsPayload(t, merging);
+      }
       const n = parsed.itemOrder.length;
       const hint = parsed.designerPageHint;
       const layoutNote =
@@ -992,6 +1072,7 @@
           pages = [[]];
         }
         placeDefaultTlalocOnPages();
+        hoistPeopleImagePagesBeforeClosing();
         appendDefaultClosingImagePages();
         syncTlalocParkedState();
         report(

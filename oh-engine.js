@@ -39,10 +39,20 @@
   }
 
   function chunkPeopleGroups(sortedNames) {
+    return chunkPeopleGroupsWithMax(sortedNames, PEOPLE_MAX_PER_GROUP);
+  }
+
+  /**
+   * Same distribution as {@link chunkPeopleGroups} but with a custom max group size (clamped ≥1).
+   * @param {string[]} sortedNames
+   * @param {number} maxPerGroup
+   */
+  function chunkPeopleGroupsWithMax(sortedNames, maxPerGroup) {
     const n = sortedNames.length;
     if (n === 0) return [];
-    if (n <= PEOPLE_MAX_PER_GROUP) return [sortedNames];
-    const numGroups = Math.ceil(n / PEOPLE_MAX_PER_GROUP);
+    const cap = Math.max(1, Math.min(999, Math.floor(Number(maxPerGroup)) || PEOPLE_MAX_PER_GROUP));
+    if (n <= cap) return [sortedNames];
+    const numGroups = Math.ceil(n / cap);
     const base = Math.floor(n / numGroups);
     const remainder = n % numGroups;
     /** @type {string[][]} */
@@ -54,6 +64,11 @@
       idx += size;
     }
     return groups;
+  }
+
+  /** True when a people string looks like a file path ending in GIF/JPG/JPEG/PNG (case-insensitive). */
+  function looksLikeImagePathPeopleValue(s) {
+    return /\.(gif|jpe?g|png)$/i.test(String(s || "").trim());
   }
 
   function pluralizeWordLower(lower) {
@@ -103,6 +118,7 @@
 
   function roleForDisplay(item) {
     if (item.kind === "imageCard") return "";
+    if (item.kind === "peopleImage") return item.role || "—";
     const base = item.role || "—";
     if (item.kind === "customCard") return base;
     const people = Array.isArray(item.people) ? item.people : [];
@@ -119,6 +135,18 @@
       const alt = typeof item.alt === "string" ? escapeHtml(item.alt) : "";
       const zoomCls = /ZoomThanks\.png/i.test(rawSrc) ? " slide-credit-img--zoom-thanks" : "";
       return `<div class="slide-credit-inner slide-credit-inner--image"><img class="slide-credit-img${zoomCls}" src="${src}" alt="${alt}" decoding="async" /></div>`;
+    }
+    if (item.kind === "peopleImage") {
+      const people = Array.isArray(item.people) ? item.people : [];
+      const rawSrc = people[0] != null ? String(people[0]).trim() : "";
+      if (!rawSrc || !looksLikeImagePathPeopleValue(rawSrc)) {
+        const roleHtml = escapeHtml(roleForDisplay(item));
+        return `<div class="slide-credit-inner"><h2 class="slide-role">${roleHtml}</h2><p class="slide-empty">Invalid image path</p></div>`;
+      }
+      const src = escapeHtml(rawSrc);
+      const roleHtml = escapeHtml(roleForDisplay(item));
+      const alt = escapeHtml(item.role ? `${item.role}` : rawSrc);
+      return `<div class="slide-credit-inner slide-credit-inner--image slide-credit-inner--people-image"><h2 class="slide-role">${roleHtml}</h2><img class="slide-credit-img slide-credit-img--people-path" src="${src}" alt="${alt}" decoding="async" /></div>`;
     }
     const roleHtml = escapeHtml(roleForDisplay(item));
     const cardClass = item.kind === "customCard" ? " slide-credit-block--custom-card" : "";
@@ -254,6 +282,8 @@
     escapeHtml,
     sortPeopleNames,
     chunkPeopleGroups,
+    chunkPeopleGroupsWithMax,
+    looksLikeImagePathPeopleValue,
     creditInnerHtml,
     roleForDisplay,
     buildSlides,
