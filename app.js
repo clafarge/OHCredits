@@ -33,6 +33,22 @@
   /** If the last Contributing Producers page has fewer than this many names, Tláloc sits on that page; else its own page before Zoom thanks. */
   const TLALOC_MAX_NAMES_ON_PRODUCERS_PAGE = 10;
 
+  /** Trimmed lowercased names never shown on any credit role. */
+  const GLOBAL_CREDIT_EXCLUDED_NAME_KEYS = new Set(["mickey macachor"]);
+
+  /** Additional trimmed lowercased names omitted only under Contributing Producers (or legacy Contributor role). */
+  const CONTRIBUTING_PRODUCERS_EXTRA_EXCLUDED_NAME_KEYS = new Set(["extra hours"]);
+
+  /** @param {string} displayName */
+  function isGloballyExcludedCreditName(displayName) {
+    return GLOBAL_CREDIT_EXCLUDED_NAME_KEYS.has(String(displayName || "").trim().toLowerCase());
+  }
+
+  /** @param {string} displayName */
+  function isExcludedContributingProducerExtraName(displayName) {
+    return CONTRIBUTING_PRODUCERS_EXTRA_EXCLUDED_NAME_KEYS.has(String(displayName || "").trim().toLowerCase());
+  }
+
   /**
    * Usable vertical space (px) per page at playout scale — tuned so ~3 simple credits
    * (role + one short name each) fit comfortably in both formats; 9:16 gets more room
@@ -114,14 +130,20 @@
       let people = row.people;
       if (!Array.isArray(people)) people = [];
       const { text: textRaw, images: imagePaths } = partitionPeopleStringsForImages(people);
-      const names = OH.sortPeopleNames(textRaw);
+      const hadTextPeople = textRaw.length > 0;
+      const rk = normalizeRoleKey(role);
+      const isProducers = isContributingProducersRoleKey(rk);
+      const namesSorted = OH.sortPeopleNames(textRaw);
+      const names = namesSorted.filter((n) => {
+        if (isGloballyExcludedCreditName(n)) return false;
+        if (isProducers && isExcludedContributingProducerExtraName(n)) return false;
+        return true;
+      });
       const roleStr = role ? roleDisplayNameFromJson(role) : "—";
       const isCustomCard =
         row &&
         typeof row === "object" &&
         /** @type {{ kind?: string }} */ (row).kind === "customCard";
-      const rk = normalizeRoleKey(role);
-      const isProducers = isContributingProducersRoleKey(rk);
       const groups = isProducers ? OH.chunkPeopleGroupsWithMax(names, producersCap) : OH.chunkPeopleGroups(names);
 
       function pushPeopleImageCard(pathStr, imgIdx) {
@@ -131,6 +153,7 @@
       }
 
       if (groups.length === 0 && imagePaths.length === 0) {
+        if (hadTextPeople) continue;
         const id = `c-${rowIndex}-0`;
         items.set(
           id,
