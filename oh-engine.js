@@ -124,11 +124,11 @@
     const people = Array.isArray(item.people) ? item.people : [];
     if (people.length <= 1) return base;
     const norm = base.trim().toLowerCase().replace(/\s+/g, " ");
+    if (norm === "contributing producer") return pluralizeRolePhrase(base);
     if (
       norm === "special thanks" ||
       norm === "tláloc traversal" ||
-      norm === "contributing producers" ||
-      norm === "contributing producer"
+      norm === "contributing producers"
     )
       return base;
     return pluralizeRolePhrase(base);
