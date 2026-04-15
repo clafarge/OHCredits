@@ -18,6 +18,7 @@
   /** Episode JSON field `Tláloc Traversal` becomes its own draggable credit card. */
   const TLALOC_ID = "__tlaloc__";
   /** Default closing slides: branded image cards (paths relative to site root). */
+  const IMAGE_CLOUDFLEX_BROADCAST_ID = "__img_cloudflex_broadcast__";
   const IMAGE_ZOOM_THANKS_ID = "__img_zoom_thanks__";
   const IMAGE_OH_TITLE_ID = "__img_oh_title__";
   const PEOPLE_MAX_PER_GROUP = 12;
@@ -139,8 +140,10 @@
       const rawSrc = item.src.trim();
       const src = escapeHtml(rawSrc);
       const alt = typeof item.alt === "string" ? escapeHtml(item.alt) : "";
-      const zoomCls = /ZoomThanks\.png/i.test(rawSrc) ? " slide-credit-img--zoom-thanks" : "";
-      return `<div class="slide-credit-inner slide-credit-inner--image"><img class="slide-credit-img${zoomCls}" src="${src}" alt="${alt}" decoding="async" /></div>`;
+      let imgModCls = "";
+      if (/ZoomThanks\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--zoom-thanks";
+      else if (/CLOUDflex_Broadcast_Logo\.webp/i.test(rawSrc)) imgModCls = " slide-credit-img--cloudflex-broadcast";
+      return `<div class="slide-credit-inner slide-credit-inner--image"><img class="slide-credit-img${imgModCls}" src="${src}" alt="${alt}" decoding="async" /></div>`;
     }
     if (item.kind === "peopleImage") {
       const people = Array.isArray(item.people) ? item.people : [];
@@ -281,6 +284,7 @@
     OUT_BLACK_HOLD_MS,
     EPISODE_ID,
     TLALOC_ID,
+    IMAGE_CLOUDFLEX_BROADCAST_ID,
     IMAGE_ZOOM_THANKS_ID,
     IMAGE_OH_TITLE_ID,
     PEOPLE_MAX_PER_GROUP,

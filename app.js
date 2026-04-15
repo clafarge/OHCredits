@@ -6,6 +6,7 @@
 
   const EPISODE_ID = OH.EPISODE_ID;
   const TLALOC_ID = OH.TLALOC_ID;
+  const IMAGE_CLOUDFLEX_BROADCAST_ID = OH.IMAGE_CLOUDFLEX_BROADCAST_ID;
   const IMAGE_ZOOM_THANKS_ID = OH.IMAGE_ZOOM_THANKS_ID;
   const IMAGE_OH_TITLE_ID = OH.IMAGE_OH_TITLE_ID;
   const PEOPLE_MAX_PER_GROUP = OH.PEOPLE_MAX_PER_GROUP;
@@ -30,7 +31,7 @@
   /** `episode` JSON key for Tláloc Traversal line on the title card (label fixed; value from JSON). */
   const EPISODE_TLALOC_KEY = "Tláloc Traversal";
 
-  /** If the last Contributing Producers page has fewer than this many names, Tláloc sits on that page; else its own page before Zoom thanks. */
+  /** If the last Contributing Producers page has fewer than this many names, Tláloc sits on that page; else its own page before default closing image slides. */
   const TLALOC_MAX_NAMES_ON_PRODUCERS_PAGE = 10;
 
   /** Trimmed lowercased names never shown on any credit role. */
@@ -719,6 +720,16 @@
   function defaultClosingImageItems() {
     return [
       [
+        IMAGE_CLOUDFLEX_BROADCAST_ID,
+        {
+          kind: "imageCard",
+          role: "",
+          people: [],
+          src: "images/CLOUDflex_Broadcast_Logo.webp",
+          alt: "CLOUDflex Broadcast",
+        },
+      ],
+      [
         IMAGE_ZOOM_THANKS_ID,
         {
           kind: "imageCard",
@@ -823,15 +834,20 @@
     pages = normalizePages(pages);
   }
 
-  /** After a full JSON replace, append Zoom thanks + OH title as the last two pages (merge does not add them). */
+  /** After a full JSON replace, append CLOUDflex + Zoom thanks + OH title as the last three pages (merge does not add them). */
   function appendDefaultClosingImagePages() {
     for (const [cardId, cardItem] of defaultClosingImageItems()) {
       itemsById.set(cardId, cardItem);
     }
     const blankLead = pages.length === 1 && pages[0].length === 0;
     if (blankLead && !episodeHtml) {
-      pages = [[IMAGE_ZOOM_THANKS_ID], [IMAGE_OH_TITLE_ID]];
+      pages = [
+        [IMAGE_CLOUDFLEX_BROADCAST_ID],
+        [IMAGE_ZOOM_THANKS_ID],
+        [IMAGE_OH_TITLE_ID],
+      ];
     } else {
+      pages.push([IMAGE_CLOUDFLEX_BROADCAST_ID]);
       pages.push([IMAGE_ZOOM_THANKS_ID]);
       pages.push([IMAGE_OH_TITLE_ID]);
     }
@@ -1117,7 +1133,7 @@
         appendDefaultClosingImagePages();
         syncTlalocParkedState();
         report(
-          `${n} credit block(s) · ${pages.length} page(s) · long roles split into ≤${PEOPLE_MAX_PER_GROUP} names per block; closing slides add Zoom thanks + Office Hours images on the last two pages.${layoutNote}`,
+          `${n} credit block(s) · ${pages.length} page(s) · long roles split into ≤${PEOPLE_MAX_PER_GROUP} names per block; closing slides add CLOUDflex Broadcast, Zoom thanks, and Office Hours images on the last three pages.${layoutNote}`,
           "ok"
         );
       } else {

@@ -729,6 +729,11 @@ select.remote-input {
   max-width: min(46cqw, 50%);
 }
 
+/** CLOUDflex: never wider than ZoomThanks.png (1000×489) at the same max-height rules. */
+.slide-credit-img.slide-credit-img--cloudflex-broadcast {
+  max-width: min(46cqw, 50%, calc(1000 / 489 * min(52cqh, 78%)));
+}
+
 .frame-9-16 .slide-credit-img {
   max-width: min(88cqw, 100%);
   max-height: min(48cqh, 72%);
@@ -737,6 +742,10 @@ select.remote-input {
 .frame-9-16 .slide-credit-img.slide-credit-img--zoom-thanks,
 .frame-9-16 .slide-credit-img.slide-credit-img--people-path {
   max-width: min(44cqw, 50%);
+}
+
+.frame-9-16 .slide-credit-img.slide-credit-img--cloudflex-broadcast {
+  max-width: min(44cqw, 50%, calc(1000 / 489 * min(48cqh, 72%)));
 }
 
 .workspace-grid .frame-16-9 .slide-credit-img {
@@ -748,6 +757,10 @@ select.remote-input {
   max-width: 50%;
 }
 
+.workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--cloudflex-broadcast {
+  max-width: min(50%, calc(1000 / 489 * min(48cqh, 220px)));
+}
+
 .workspace-grid .frame-9-16 .slide-credit-img {
   max-height: min(42cqh, 200px);
 }
@@ -755,6 +768,10 @@ select.remote-input {
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--zoom-thanks,
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
+}
+
+.workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--cloudflex-broadcast {
+  max-width: min(50%, calc(1000 / 489 * min(42cqh, 200px)));
 }
 
 .page-box--organizer .slide-credit-img {
@@ -765,6 +782,10 @@ select.remote-input {
 .page-box--organizer .slide-credit-img.slide-credit-img--zoom-thanks,
 .page-box--organizer .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
+}
+
+.page-box--organizer .slide-credit-img.slide-credit-img--cloudflex-broadcast {
+  max-width: min(50%, calc(1000 / 489 * 120px));
 }
 
 .slide-episode-title {
