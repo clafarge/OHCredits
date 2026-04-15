@@ -38,7 +38,7 @@
   const GLOBAL_CREDIT_EXCLUDED_NAME_KEYS = new Set(["mickey macachor"]);
 
   /** Additional trimmed lowercased names omitted only under Contributing Producers (or legacy Contributor role). */
-  const CONTRIBUTING_PRODUCERS_EXTRA_EXCLUDED_NAME_KEYS = new Set(["extra hours"]);
+  const CONTRIBUTING_PRODUCERS_EXTRA_EXCLUDED_NAME_KEYS = new Set(["extra hours", "tuesday focus"]);
 
   /** @param {string} displayName */
   function isGloballyExcludedCreditName(displayName) {
