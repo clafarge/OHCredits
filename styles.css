@@ -63,9 +63,26 @@ body {
   min-height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
-/* Single-format links: ?view=16x9 | ?view=9x16 (aliases: 169, 916, horizontal, vertical) */
+/* Builder only (index.html): unobtrusive semver, bottom-right of viewport */
+.app-version {
+  position: fixed;
+  right: 12px;
+  bottom: 10px;
+  z-index: 40;
+  margin: 0;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Single-format links: ?view=16x9 | ?view=9x16 (aliases: 169, 916, 9:16, 9-16, horizontal, vertical) */
 .app--169-only .workspace-grid > .workspace-col:nth-child(2),
 .app--916-only .workspace-grid > .workspace-col:nth-child(1) {
   display: none !important;
@@ -1409,6 +1426,27 @@ select.remote-input {
 .player-shell--916 .playout-frame {
   width: min(100vw, calc(100vh * 9 / 16));
   height: min(100vh, calc(100vw * 16 / 9));
+}
+
+/*
+ * vMix / older CEF: permanent scrollbars shrink #slide-content’s client width, so
+ * centered type looks shifted left vs desktop Chrome (overlay scrollbars).
+ * min-width: 0 avoids flex min-content overflow fighting justify-content: center.
+ */
+.player-body .slide-layer {
+  min-width: 0;
+  min-height: 0;
+}
+
+.player-body .slide-content {
+  min-width: 0;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.player-body .slide-content::-webkit-scrollbar {
+  display: none;
 }
 
 /* Browser player (no fixed HD canvas): slightly larger type than responsive clamps alone suggested. */

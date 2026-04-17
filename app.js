@@ -4,6 +4,13 @@
   const OH = window.OHCreditsEngine;
   if (!OH) throw new Error("Load oh-engine.js before app.js");
 
+  (function renderAppVersion() {
+    const el = document.getElementById("app-version-value");
+    const v =
+      typeof window.OH_CREDITS_VERSION === "string" ? window.OH_CREDITS_VERSION.trim() : "";
+    if (el && v) el.textContent = v;
+  })();
+
   const EPISODE_ID = OH.EPISODE_ID;
   const TLALOC_ID = OH.TLALOC_ID;
   const IMAGE_CLOUDFLEX_BROADCAST_ID = OH.IMAGE_CLOUDFLEX_BROADCAST_ID;
@@ -2128,11 +2135,21 @@
     }
   });
 
+  /** @param {string | null | undefined} v */
+  function normalizeAspectViewParam(v) {
+    return String(v || "")
+      .toLowerCase()
+      .trim()
+      .replace(/_/g, "")
+      .replace(/:/g, "x")
+      .replace(/-/g, "x");
+  }
+
   function applyViewFromQuery() {
     const app = document.querySelector(".app");
     if (!app) return;
     const p = new URLSearchParams(window.location.search);
-    const raw = (p.get("view") || p.get("format") || "").toLowerCase().replace(/_/g, "");
+    const raw = normalizeAspectViewParam(p.get("view") || p.get("format") || "");
     app.classList.remove("app--169-only", "app--916-only");
     if (raw === "16x9" || raw === "169" || raw === "horizontal" || raw === "landscape") {
       app.classList.add("app--169-only");

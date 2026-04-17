@@ -132,7 +132,18 @@
   }
 
   const params = new URLSearchParams(window.location.search);
-  const rawView = (params.get("view") || "").toLowerCase().replace(/_/g, "");
+
+  /** @param {string | null | undefined} v */
+  function normalizeAspectViewParam(v) {
+    return String(v || "")
+      .toLowerCase()
+      .trim()
+      .replace(/_/g, "")
+      .replace(/:/g, "x")
+      .replace(/-/g, "x");
+  }
+
+  const rawView = normalizeAspectViewParam(params.get("view"));
   const is916 =
     rawView === "9x16" ||
     rawView === "916" ||
