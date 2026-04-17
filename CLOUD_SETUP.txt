@@ -96,12 +96,16 @@ Never commit connection strings or passwords to this repository.
    (or 9:16). Their browser loads player-config.json from your site, then fetches
    the design from Supabase. No giant hash in the URL.
 
-   vMix / fixed canvas: &hd=1 or &hd=1080 → 1920×1080 (or 1080×1920 vertical).
+   vMix / fixed canvas: &hd=1 or &hd=1080 → logical 1920×1080 (or 1080×1920 vertical).
    1440p: &hd=1440 or &hd=1440p or &hd=qhd (or &output=1440 / &output=qhd / &output=2560)
    → 2560×1440 or 1440×2560 vertical.
-   4K: &hd=4k (or &hd=2160, &scale=2, &scale=200) → 3840×2160 or 2160×3840 —
-   match the browser input resolution and use 100% zoom so the page isn’t
-   upscaled by the app (scaling stays sharp).
+   4K: &hd=4k (or &hd=2160, &scale=2, &scale=200) → 3840×2160 or 2160×3840.
+   The player letterboxes that canvas inside the real browser input (so vertical
+   9:16 stays centered in a landscape input). For sharpest pixels, still match
+   input resolution to the tier and use 100% zoom when possible.
+   One landscape input for both 16×9 and 9×16 credits: add &layout=169 (or
+   &embed=stream|youtube|yt) with &hd=… so the logical canvas stays 16×9 and
+   vertical credits are pillarboxed inside it for downstream 16×9 encoders.
 
 Alternatives: Firebase Firestore, Cloudflare D1 + Worker, PlanetScale + serverless
 API — same pattern: public read by event id, writes behind a secret or auth.

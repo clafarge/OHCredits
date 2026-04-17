@@ -1428,6 +1428,23 @@ select.remote-input {
   height: min(100vh, calc(100vw * 16 / 9));
 }
 
+/* Fluid player: one 16×9 window, 9×16 pillarboxed (same geometry as shell--916) */
+.player-body--embed-169:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .player-shell--169 {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-body--embed-169:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .player-shell--169
+  .playout-frame.frame-9-16 {
+  width: min(100vw, calc(100vh * 9 / 16));
+  height: min(100vh, calc(100vw * 16 / 9));
+  max-width: 100%;
+}
+
 /*
  * vMix / older CEF: permanent scrollbars shrink #slide-content’s client width, so
  * centered type looks shifted left vs desktop Chrome (overlay scrollbars).
@@ -1447,6 +1464,52 @@ select.remote-input {
 
 .player-body .slide-content::-webkit-scrollbar {
   display: none;
+}
+
+/* player.html: wrappers are layout-transparent unless broadcast tier is active */
+.player-broadcast-fit-root,
+.player-broadcast-fit-inner {
+  display: contents;
+}
+
+/*
+ * Broadcast tier: letterbox the fixed pixel canvas inside the real vMix viewport using
+ * Chromium `zoom` (so 1080×1920 vertical still fits and centers in a 1920×1080 input).
+ * --oh-broadcast-w / --oh-broadcast-h are set on <html> in player.js.
+ */
+html.player-broadcast-active,
+html.player-broadcast-active body.player-body {
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+html.player-broadcast-active body.player-body {
+  display: flex;
+  flex-direction: column;
+}
+
+html.player-broadcast-active .player-broadcast-fit-root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--bg);
+}
+
+html.player-broadcast-active .player-broadcast-fit-inner {
+  display: block;
+  flex-shrink: 0;
+  width: calc(var(--oh-broadcast-w) * 1px);
+  height: calc(var(--oh-broadcast-h) * 1px);
+  zoom: calc(
+    min(100vw, calc(100vh * var(--oh-broadcast-w) / var(--oh-broadcast-h))) / (var(--oh-broadcast-w) * 1px)
+  );
 }
 
 /* Browser player (no fixed HD canvas): slightly larger type than responsive clamps alone suggested. */
@@ -1487,23 +1550,23 @@ select.remote-input {
 }
 
 /*
- * Fixed broadcast canvases for vMix / NDI (sharp scaling: match input res, 100% zoom).
+ * Fixed broadcast canvases for vMix / NDI (logical pixels; letterboxed via zoom above).
  * 1080p: ?hd=1 | hd=1080 | output=1080 → 1920×1080 or 1080×1920.
  * 1440p QHD: ?hd=1440 | hd=qhd | output=1440 | output=2560 → 2560×1440 or 1440×2560.
  * 4K: ?hd=4k | hd=2160 | uhd | scale=2 | scale=200 → 3840×2160 or 2160×3840.
  */
-.player-body.player-body--hd1080 {
+.player-body.player-body--hd1080,
+.player-body.player-body--hd1440,
+.player-body.player-body--hd4k {
   margin: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
   min-height: 0;
-  width: 1920px;
-  height: 1080px;
   overflow: hidden;
   background: var(--bg);
-}
-
-.player-body.player-body--hd1080-vertical {
-  width: 1080px;
-  height: 1920px;
+  box-sizing: border-box;
 }
 
 .player-body.player-body--hd1080 .player-shell {
@@ -1513,10 +1576,27 @@ select.remote-input {
   box-sizing: border-box;
 }
 
-.player-body.player-body--hd1080 .player-shell--169 .playout-frame {
+.player-body.player-body--hd1080 .player-shell--169 .playout-frame.frame-16-9 {
   width: 1920px;
   height: 1080px;
   max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* layout=169 + hd + 9:16: tier stays 1920×1080; vertical frame is inset pillarbox */
+.player-body--embed-169.player-body--hd1080 .player-shell--169 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-body--embed-169.player-body--hd1080 .player-shell--169 .playout-frame.frame-9-16 {
+  width: auto;
+  height: 100%;
+  max-height: 100%;
+  max-width: 100%;
+  aspect-ratio: 9 / 16;
   border-radius: 0;
   box-shadow: none;
 }
@@ -1583,20 +1663,6 @@ select.remote-input {
  * 1440p QHD (2560×1440): 4/3 of the 1080p broadcast tier (linear match to pixel grid).
  * Set vMix browser input to 2560×1440 and zoom 100% for 1:1 pixels.
  */
-.player-body.player-body--hd1440 {
-  margin: 0;
-  min-height: 0;
-  width: 2560px;
-  height: 1440px;
-  overflow: hidden;
-  background: var(--bg);
-}
-
-.player-body.player-body--hd1440-vertical {
-  width: 1440px;
-  height: 2560px;
-}
-
 .player-body.player-body--hd1440 .player-shell {
   min-height: 0;
   width: 100%;
@@ -1604,10 +1670,26 @@ select.remote-input {
   box-sizing: border-box;
 }
 
-.player-body.player-body--hd1440 .player-shell--169 .playout-frame {
+.player-body.player-body--hd1440 .player-shell--169 .playout-frame.frame-16-9 {
   width: 2560px;
   height: 1440px;
   max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.player-body--embed-169.player-body--hd1440 .player-shell--169 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-body--embed-169.player-body--hd1440 .player-shell--169 .playout-frame.frame-9-16 {
+  width: auto;
+  height: 100%;
+  max-height: 100%;
+  max-width: 100%;
+  aspect-ratio: 9 / 16;
   border-radius: 0;
   box-shadow: none;
 }
@@ -1674,20 +1756,6 @@ select.remote-input {
  * 4K UHD (3840×2160): ~2× the 1080p broadcast tier. Use ?hd=4k or ?scale=2 (or scale=200).
  * Set vMix browser input to 3840×2160 and zoom 100% for 1:1 pixels.
  */
-.player-body.player-body--hd4k {
-  margin: 0;
-  min-height: 0;
-  width: 3840px;
-  height: 2160px;
-  overflow: hidden;
-  background: var(--bg);
-}
-
-.player-body.player-body--hd4k-vertical {
-  width: 2160px;
-  height: 3840px;
-}
-
 .player-body.player-body--hd4k .player-shell {
   min-height: 0;
   width: 100%;
@@ -1695,10 +1763,26 @@ select.remote-input {
   box-sizing: border-box;
 }
 
-.player-body.player-body--hd4k .player-shell--169 .playout-frame {
+.player-body.player-body--hd4k .player-shell--169 .playout-frame.frame-16-9 {
   width: 3840px;
   height: 2160px;
   max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.player-body--embed-169.player-body--hd4k .player-shell--169 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-body--embed-169.player-body--hd4k .player-shell--169 .playout-frame.frame-9-16 {
+  width: auto;
+  height: 100%;
+  max-height: 100%;
+  max-width: 100%;
+  aspect-ratio: 9 / 16;
   border-radius: 0;
   box-shadow: none;
 }

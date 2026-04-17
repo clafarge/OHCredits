@@ -151,10 +151,27 @@
     rawView === "portrait";
 
   /**
+   * Single landscape browser (e.g. YouTube): keep tier’s 16×9 broadcast canvas and
+   * pillarbox 9×16 credits inside it. ?layout=169 (aliases: embed=169|stream|youtube|yt).
+   */
+  function parseEmbed169Layout(p) {
+    const raw = normalizeAspectViewParam(p.get("layout") || p.get("embed"));
+    return (
+      raw === "169" ||
+      raw === "16x9" ||
+      raw === "stream" ||
+      raw === "youtube" ||
+      raw === "yt"
+    );
+  }
+
+  const embed169 = parseEmbed169Layout(params);
+
+  /**
    * Fixed “broadcast” canvas: avoids vw/rem caps that stay tiny on large displays.
-   * - hd=1|1080|1080p → 1920×1080 (or 1080×1920 vertical)
-   * - hd=1440|1440p|qhd or output=1440|qhd|2560 → 2560×1440 (or 1440×2560 vertical)
-   * - hd=4k|2160|uhd or output=2160 or scale=2|200 → 3840×2160 (or 2160×3840)
+   * - hd=1|1080|1080p → 1920×1080 (or 1080×1920 vertical; with layout=169 → always 1920×1080 + pillarbox)
+   * - hd=1440|1440p|qhd or output=1440|qhd|2560 → 2560×1440 (or 1440×2560 vertical; layout=169 → 2560×1440 + pillarbox)
+   * - hd=4k|2160|uhd or output=2160 or scale=2|200 → 3840×2160 (or 2160×3840 vertical; layout=169 → 3840×2160 + pillarbox)
    * scale: use 2 (or 200 meaning 200%) for 4K vs the 1080p baseline.
    * @returns {"1080" | "1440" | "4k" | null}
    */
@@ -189,9 +206,31 @@
 
   const broadcastTier = parseBroadcastTier(params);
 
+  /** Letterbox fixed broadcast pixels inside any vMix viewport (Chromium `zoom`). */
+  function clearBroadcastFit() {
+    document.documentElement.classList.remove("player-broadcast-active");
+    document.documentElement.style.removeProperty("--oh-broadcast-w");
+    document.documentElement.style.removeProperty("--oh-broadcast-h");
+  }
+
+  /** @param {number} w native canvas width (e.g. 1920 or 1080 for vertical) */
+  function setBroadcastFit(w, h) {
+    document.documentElement.classList.add("player-broadcast-active");
+    document.documentElement.style.setProperty("--oh-broadcast-w", String(w));
+    document.documentElement.style.setProperty("--oh-broadcast-h", String(h));
+  }
+
+  clearBroadcastFit();
+
+  document.body.classList.remove("player-body--embed-169");
+
   shell.classList.remove("player-shell--169", "player-shell--916");
   frame.classList.remove("frame-16-9", "frame-9-16");
-  if (is916) {
+  if (embed169 && is916) {
+    document.body.classList.add("player-body--embed-169");
+    shell.classList.add("player-shell--169");
+    frame.classList.add("frame-9-16");
+  } else if (is916) {
     shell.classList.add("player-shell--916");
     frame.classList.add("frame-9-16");
   } else {
@@ -199,36 +238,29 @@
     frame.classList.add("frame-16-9");
   }
 
+  const broadcastViewport = "width=device-width, initial-scale=1";
+
   if (broadcastTier === "1080") {
     document.body.classList.add("player-body--hd1080");
-    if (is916) document.body.classList.add("player-body--hd1080-vertical");
+    const w = embed169 && is916 ? 1920 : is916 ? 1080 : 1920;
+    const h = embed169 && is916 ? 1080 : is916 ? 1920 : 1080;
+    setBroadcastFit(w, h);
     const mv = document.querySelector('meta[name="viewport"]');
-    if (mv) {
-      mv.setAttribute(
-        "content",
-        is916 ? "width=1080, height=1920, initial-scale=1" : "width=1920, initial-scale=1"
-      );
-    }
+    if (mv) mv.setAttribute("content", broadcastViewport);
   } else if (broadcastTier === "1440") {
     document.body.classList.add("player-body--hd1440");
-    if (is916) document.body.classList.add("player-body--hd1440-vertical");
+    const w = embed169 && is916 ? 2560 : is916 ? 1440 : 2560;
+    const h = embed169 && is916 ? 1440 : is916 ? 2560 : 1440;
+    setBroadcastFit(w, h);
     const mv = document.querySelector('meta[name="viewport"]');
-    if (mv) {
-      mv.setAttribute(
-        "content",
-        is916 ? "width=1440, height=2560, initial-scale=1" : "width=2560, initial-scale=1"
-      );
-    }
+    if (mv) mv.setAttribute("content", broadcastViewport);
   } else if (broadcastTier === "4k") {
     document.body.classList.add("player-body--hd4k");
-    if (is916) document.body.classList.add("player-body--hd4k-vertical");
+    const w = embed169 && is916 ? 3840 : is916 ? 2160 : 3840;
+    const h = embed169 && is916 ? 2160 : is916 ? 3840 : 2160;
+    setBroadcastFit(w, h);
     const mv = document.querySelector('meta[name="viewport"]');
-    if (mv) {
-      mv.setAttribute(
-        "content",
-        is916 ? "width=2160, height=3840, initial-scale=1" : "width=3840, initial-scale=1"
-      );
-    }
+    if (mv) mv.setAttribute("content", broadcastViewport);
   }
 
   void (async function loadAndPlay() {
