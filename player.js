@@ -142,9 +142,10 @@
   /**
    * Fixed “broadcast” canvas: avoids vw/rem caps that stay tiny on large displays.
    * - hd=1|1080|1080p → 1920×1080 (or 1080×1920 vertical)
+   * - hd=1440|1440p|qhd or output=1440|qhd|2560 → 2560×1440 (or 1440×2560 vertical)
    * - hd=4k|2160|uhd or output=2160 or scale=2|200 → 3840×2160 (or 2160×3840)
    * scale: use 2 (or 200 meaning 200%) for 4K vs the 1080p baseline.
-   * @returns {"1080" | "4k" | null}
+   * @returns {"1080" | "1440" | "4k" | null}
    */
   function parseBroadcastTier(p) {
     const h = (p.get("hd") || "").toLowerCase().trim();
@@ -162,6 +163,9 @@
       ["4k", "2160", "uhd", "3840"].includes(o) ||
       scaleFactor >= 1.9;
     if (fourK) return "4k";
+    const qhd =
+      ["1440", "1440p", "qhd"].includes(h) || ["1440", "qhd", "2560"].includes(o);
+    if (qhd) return "1440";
     const tenEighty =
       h === "1" ||
       h === "true" ||
@@ -192,6 +196,16 @@
       mv.setAttribute(
         "content",
         is916 ? "width=1080, height=1920, initial-scale=1" : "width=1920, initial-scale=1"
+      );
+    }
+  } else if (broadcastTier === "1440") {
+    document.body.classList.add("player-body--hd1440");
+    if (is916) document.body.classList.add("player-body--hd1440-vertical");
+    const mv = document.querySelector('meta[name="viewport"]');
+    if (mv) {
+      mv.setAttribute(
+        "content",
+        is916 ? "width=1440, height=2560, initial-scale=1" : "width=2560, initial-scale=1"
       );
     }
   } else if (broadcastTier === "4k") {

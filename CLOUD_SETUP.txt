@@ -97,6 +97,8 @@ Never commit connection strings or passwords to this repository.
    the design from Supabase. No giant hash in the URL.
 
    vMix / fixed canvas: &hd=1 or &hd=1080 → 1920×1080 (or 1080×1920 vertical).
+   1440p: &hd=1440 or &hd=1440p or &hd=qhd (or &output=1440 / &output=qhd / &output=2560)
+   → 2560×1440 or 1440×2560 vertical.
    4K: &hd=4k (or &hd=2160, &scale=2, &scale=200) → 3840×2160 or 2160×3840 —
    match the browser input resolution and use 100% zoom so the page isn’t
    upscaled by the app (scaling stays sharp).

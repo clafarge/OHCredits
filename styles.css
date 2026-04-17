@@ -1412,45 +1412,46 @@ select.remote-input {
 }
 
 /* Browser player (no fixed HD canvas): slightly larger type than responsive clamps alone suggested. */
-.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .slide-episode-title {
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .slide-episode-title {
   font-size: clamp(1.25rem, 6.8cqw, 3.25rem);
 }
 
-.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .slide-episode-date {
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .slide-episode-date {
   font-size: clamp(1.05rem, 5.2cqw, 2.2rem);
 }
 
-.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .slide-role {
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .slide-role {
   font-size: clamp(17px, 5.2cqw, 2.5rem);
 }
 
-.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .slide-people {
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .slide-people {
   font-size: clamp(15px, 4.9cqw, 2.25rem);
 }
 
-.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .frame-9-16 .slide-episode-title {
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .frame-9-16 .slide-episode-title {
   font-size: clamp(1.05rem, 5.8cqh, 2.65rem);
 }
 
-.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .frame-9-16 .slide-episode-date {
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .frame-9-16 .slide-episode-date {
   font-size: clamp(0.9rem, 4.2cqh, 1.9rem);
 }
 
-.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .frame-9-16 .slide-role {
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .frame-9-16 .slide-role {
   font-size: clamp(14px, 4.6cqh, 1.95rem);
 }
 
-.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .frame-9-16 .slide-people {
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .frame-9-16 .slide-people {
   font-size: clamp(13px, 4.3cqh, 1.85rem);
 }
 
-.player-body:not(.player-body--hd1080):not(.player-body--hd4k) .frame-9-16 .slide-empty {
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .frame-9-16 .slide-empty {
   font-size: clamp(12px, 3.4cqh, 1.1rem);
 }
 
 /*
  * Fixed broadcast canvases for vMix / NDI (sharp scaling: match input res, 100% zoom).
  * 1080p: ?hd=1 | hd=1080 | output=1080 → 1920×1080 or 1080×1920.
+ * 1440p QHD: ?hd=1440 | hd=qhd | output=1440 | output=2560 → 2560×1440 or 1440×2560.
  * 4K: ?hd=4k | hd=2160 | uhd | scale=2 | scale=200 → 3840×2160 or 2160×3840.
  */
 .player-body.player-body--hd1080 {
@@ -1538,6 +1539,97 @@ select.remote-input {
 
 .player-body.player-body--hd1080 .frame-9-16 .slide-empty {
   font-size: 1.2rem;
+}
+
+/*
+ * 1440p QHD (2560×1440): 4/3 of the 1080p broadcast tier (linear match to pixel grid).
+ * Set vMix browser input to 2560×1440 and zoom 100% for 1:1 pixels.
+ */
+.player-body.player-body--hd1440 {
+  margin: 0;
+  min-height: 0;
+  width: 2560px;
+  height: 1440px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.player-body.player-body--hd1440-vertical {
+  width: 1440px;
+  height: 2560px;
+}
+
+.player-body.player-body--hd1440 .player-shell {
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.player-body.player-body--hd1440 .player-shell--169 .playout-frame {
+  width: 2560px;
+  height: 1440px;
+  max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.player-body.player-body--hd1440 .player-shell--916 .playout-frame {
+  width: 1440px;
+  height: 2560px;
+  max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.player-body.player-body--hd1440 .slide-layer {
+  padding: 75px 96px;
+}
+
+.player-body.player-body--hd1440 .slide-episode-title {
+  font-size: 5rem;
+  font-weight: 400;
+}
+
+.player-body.player-body--hd1440 .slide-episode-date {
+  font-size: 3rem;
+}
+
+.player-body.player-body--hd1440 .slide-role {
+  font-size: 2.83rem;
+}
+
+.player-body.player-body--hd1440 .slide-people {
+  font-size: 2.67rem;
+  line-height: 1.38;
+}
+
+.player-body.player-body--hd1440 .slide-empty {
+  font-size: 2rem;
+}
+
+.player-body.player-body--hd1440 .frame-9-16 .slide-layer {
+  padding: 64px 48px;
+}
+
+.player-body.player-body--hd1440 .frame-9-16 .slide-episode-title {
+  font-size: 3.8rem;
+}
+
+.player-body.player-body--hd1440 .frame-9-16 .slide-episode-date {
+  font-size: 2.47rem;
+}
+
+.player-body.player-body--hd1440 .frame-9-16 .slide-role {
+  font-size: 2.17rem;
+}
+
+.player-body.player-body--hd1440 .frame-9-16 .slide-people {
+  font-size: 2rem;
+}
+
+.player-body.player-body--hd1440 .frame-9-16 .slide-empty {
+  font-size: 1.6rem;
 }
 
 /*
