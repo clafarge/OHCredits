@@ -742,6 +742,7 @@ select.remote-input {
 }
 
 .slide-credit-img.slide-credit-img--zoom-thanks,
+.slide-credit-img.slide-credit-img--vmix-logo,
 .slide-credit-img.slide-credit-img--people-path {
   max-width: min(46cqw, 50%);
 }
@@ -757,6 +758,7 @@ select.remote-input {
 }
 
 .frame-9-16 .slide-credit-img.slide-credit-img--zoom-thanks,
+.frame-9-16 .slide-credit-img.slide-credit-img--vmix-logo,
 .frame-9-16 .slide-credit-img.slide-credit-img--people-path {
   max-width: min(44cqw, 50%);
 }
@@ -770,6 +772,7 @@ select.remote-input {
 }
 
 .workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--zoom-thanks,
+.workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--vmix-logo,
 .workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
 }
@@ -783,6 +786,7 @@ select.remote-input {
 }
 
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--zoom-thanks,
+.workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--vmix-logo,
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
 }
@@ -797,6 +801,7 @@ select.remote-input {
 }
 
 .page-box--organizer .slide-credit-img.slide-credit-img--zoom-thanks,
+.page-box--organizer .slide-credit-img.slide-credit-img--vmix-logo,
 .page-box--organizer .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
 }

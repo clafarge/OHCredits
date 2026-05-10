@@ -331,7 +331,8 @@
 
     let slides;
     try {
-      slides = slidesFromState(state);
+      const playState = OH.preparePlayerDesignState(state, params.get("platform"));
+      slides = slidesFromState(playState);
     } catch {
       showError("Invalid page layout in this design.");
       return;

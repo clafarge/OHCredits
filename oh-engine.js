@@ -143,6 +143,7 @@
       let imgModCls = "";
       if (/ZoomThanks\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--zoom-thanks";
       else if (/CLOUDflex_Broadcast_Logo\.webp/i.test(rawSrc)) imgModCls = " slide-credit-img--cloudflex-broadcast";
+      else if (/vMix-Logo-White\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--vmix-logo";
       return `<div class="slide-credit-inner slide-credit-inner--image"><img class="slide-credit-img${imgModCls}" src="${src}" alt="${alt}" decoding="async" /></div>`;
     }
     if (item.kind === "peopleImage") {
@@ -199,6 +200,115 @@
       slides.push({ html: `<div class="slide-page">${gaps}</div>` });
     }
     return slides;
+  }
+
+  /**
+   * Map `?platform=` token (case-insensitive) to closing-slide image. Add new keys here over time.
+   * @param {string} token
+   * @returns {{ idSlug: string, src: string, alt: string } | null}
+   */
+  function resolvePlatformLogoSpec(token) {
+    const key = String(token || "").trim().toLowerCase();
+    if (key === "cloudflex") {
+      return {
+        idSlug: "cloudflex",
+        src: "images/CLOUDflex_Broadcast_Logo.webp",
+        alt: "CLOUDflex Broadcast",
+      };
+    }
+    if (key === "vmix") {
+      return {
+        idSlug: "vmix",
+        src: "images/vMix-Logo-White.png",
+        alt: "vMix",
+      };
+    }
+    return null;
+  }
+
+  /**
+   * Player-only: strip legacy default CLOUDflex closing page from saved designs, then insert
+   * partner logos from `?platform=a,b` in list order immediately before the Office Hours title slide.
+   * @param {object} state
+   * @param {string | null | undefined} platformQueryString
+   * @returns {object}
+   */
+  function preparePlayerDesignState(state, platformQueryString) {
+    if (!state || typeof state !== "object") return state;
+    const pages =
+      Array.isArray(state.pages) && state.pages.length
+        ? state.pages.map((p) => (Array.isArray(p) ? [...p] : []))
+        : [[]];
+    const rawItems = state.items;
+    const items =
+      rawItems instanceof Map
+        ? Object.fromEntries(rawItems)
+        : { ...(rawItems && typeof rawItems === "object" ? rawItems : {}) };
+
+    for (let i = pages.length - 1; i >= 0; i--) {
+      const pg = pages[i];
+      if (pg.length !== 1 || pg[0] !== IMAGE_CLOUDFLEX_BROADCAST_ID) continue;
+      const it = items[pg[0]];
+      if (
+        it &&
+        it.kind === "imageCard" &&
+        typeof it.src === "string" &&
+        /CLOUDflex_Broadcast_Logo\.webp/i.test(it.src)
+      ) {
+        pages.splice(i, 1);
+        delete items[IMAGE_CLOUDFLEX_BROADCAST_ID];
+      }
+    }
+
+    const raw = String(platformQueryString || "").trim();
+    const parts = raw ? raw.split(",").map((s) => s.trim()).filter(Boolean) : [];
+    /** @type {{ idSlug: string, src: string, alt: string }[]} */
+    const logos = [];
+    for (const part of parts) {
+      const spec = resolvePlatformLogoSpec(part);
+      if (spec) logos.push(spec);
+    }
+
+    let insertAt = -1;
+    for (let i = 0; i < pages.length; i++) {
+      if (pages[i].length === 1 && pages[i][0] === IMAGE_OH_TITLE_ID) {
+        insertAt = i;
+        break;
+      }
+    }
+    if (insertAt === -1) {
+      for (let i = pages.length - 1; i >= 0; i--) {
+        if (pages[i].includes(IMAGE_OH_TITLE_ID)) {
+          insertAt = i;
+          break;
+        }
+      }
+    }
+
+    let pf = 0;
+    const toInsert = [];
+    for (const spec of logos) {
+      const id = `__img_pf_${spec.idSlug}_${pf++}__`;
+      items[id] = {
+        kind: "imageCard",
+        role: "",
+        people: [],
+        src: spec.src,
+        alt: spec.alt,
+      };
+      toInsert.push([id]);
+    }
+    if (toInsert.length) {
+      if (insertAt === -1) pages.push(...toInsert);
+      else pages.splice(insertAt, 0, ...toInsert);
+    }
+
+    return {
+      ...state,
+      pages,
+      items,
+      episodeHtml: state.episodeHtml != null ? state.episodeHtml : null,
+    };
   }
 
   function renderSlideInto(el, slides, index) {
@@ -301,5 +411,6 @@
     runPlayoutOnElement,
     encodeDesignState,
     decodeDesignState,
+    preparePlayerDesignState,
   };
 })();
