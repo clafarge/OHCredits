@@ -154,6 +154,17 @@
     return out;
   }
 
+  /** Strip trailing "(…)" segments for role logic so "Engineer in Charge (vMix)" matches engineer rules. */
+  function canonicalNormForRole(role) {
+    let k = String(role || "").trim().toLowerCase().replace(/\s+/g, " ");
+    for (;;) {
+      const next = k.replace(/\s*\([^)]*\)\s*$/g, "").trim().replace(/\s+/g, " ");
+      if (next === k) break;
+      k = next;
+    }
+    return k;
+  }
+
   function roleForDisplay(item) {
     if (item.kind === "imageCard") return "";
     if (item.kind === "peopleImage") return uppercaseRoleTitlePreserveVmix(item.role || "—");
@@ -164,7 +175,7 @@
     const people = Array.isArray(item.people) ? item.people : [];
     if (people.length <= 1) return uppercaseRoleTitlePreserveVmix(base);
 
-    const norm = base.trim().toLowerCase().replace(/\s+/g, " ");
+    const norm = canonicalNormForRole(base);
     /** @type {string} */
     let t;
     if (norm === "contributing producer") t = pluralizeRolePhrase(base);

@@ -179,7 +179,7 @@
         imagePaths.forEach((pathStr, ii) => pushPeopleImageCard(pathStr, ii));
       }
     }
-    let finalOrder = reorderItemOrderForRoleClusters(order, items);
+    let finalOrder = sortOrderRowsByRolePriority(order, items);
     const remapped = remapClusterItemIds(finalOrder, items);
     return { items: remapped.items, order: remapped.order };
   }
@@ -624,14 +624,58 @@
   }
 
   /**
-   * Related trainer/trainee role lines share a cluster id and fixed sort rank so they stay adjacent
-   * and render as Engineer → Trainer → Trainee (etc.) regardless of JSON order.
+   * Same as role matching for humans: strip trailing "(vMix)", "(PSC)", etc. for comparisons & sorting.
+   */
+  function canonicalRoleKeyForSort(role) {
+    let k = normalizeRoleKey(role);
+    for (;;) {
+      const next = k.replace(/\s*\([^)]*\)\s*$/g, "").trim().replace(/\s+/g, " ");
+      if (next === k) break;
+      k = next;
+    }
+    return k;
+  }
+
+  /**
+   * Global credit-row order (lower tier = earlier). Unknown roles sort at 105 (between Comms and EIC).
+   * Engineer / Trainer / Trainee EIC sit at 107–109, immediately before Contributing Producer(s).
+   * @param {string} role
+   * @returns {{ tier: number }}
+   */
+  function roleSortTier(role) {
+    const k = canonicalRoleKeyForSort(role);
+    if (k === "host") return { tier: 10 };
+    if (k === "reader") return { tier: 20 };
+    if (k === "panelist" || k === "panelists") return { tier: 30 };
+    if (k === "technical director") return { tier: 50 };
+    if (k === "trainer - td") return { tier: 51 };
+    if (k === "trainee - td") return { tier: 52 };
+    if (k === "question coordinator") return { tier: 60 };
+    if (k === "question manager") return { tier: 61 };
+    if (k === "panel liaison") return { tier: 70 };
+    if (k === "rfi documentor" || k === "rfi documenter") return { tier: 80 };
+    if (k === "rfi - trainer") return { tier: 81 };
+    if (k === "rfi - trainee") return { tier: 82 };
+    if (k === "psc" || k === "pre-show coordinator") return { tier: 90 };
+    if (k === "comms") return { tier: 100 };
+    if (k === "engineer in charge") return { tier: 107 };
+    if (k === "trainer - eic") return { tier: 108 };
+    if (k === "trainee - eic") return { tier: 109 };
+    if (isContributingProducersRoleKey(k)) return { tier: 110 };
+    if (k === normalizeRoleKey(EPISODE_TLALOC_KEY)) return { tier: 115 };
+    if (k === "special thanks") return { tier: 120 };
+    return { tier: 105 };
+  }
+
+  /**
+   * Related trainer/trainee role lines share a cluster id for id remapping (starter layouts).
+   * Uses canonical keys so "Engineer in Charge (vMix)" groups with Trainer - EIC.
    * @param {{ role: string, people?: string[], kind?: string } | undefined} item
    * @returns {{ cluster: string, rank: number } | null}
    */
   function getClusterMetaForItem(item) {
     if (!item || item.kind === "imageCard" || item.kind === "peopleImage") return null;
-    const key = normalizeRoleKey(item.role);
+    const key = canonicalRoleKeyForSort(item.role);
     if (key === "engineer in charge") return { cluster: "eic", rank: 0 };
     if (key === "trainer - eic") return { cluster: "eic", rank: 1 };
     if (key === "trainee - eic") return { cluster: "eic", rank: 2 };
@@ -665,54 +709,35 @@
   }
 
   /**
+   * Sort JSON credit rows by show rules (Host first, EIC/TD blocks, Question Coordinator before Manager, …).
+   * Within each row, id order is unchanged (chunk order preserved).
    * @param {string[]} order
    * @param {Map<string, { role: string, people: string[] }>} items
    */
-  function reorderItemOrderForRoleClusters(order, items) {
+  function sortOrderRowsByRolePriority(order, items) {
     if (order.length === 0) return order;
-    /** @type {Map<string, number>} */
-    const minIdx = new Map();
-    /** @type {Map<string, { id: string, rank: number }[]>} */
-    const byCluster = new Map();
-
-    for (let i = 0; i < order.length; i++) {
-      const id = order[i];
-      const item = items.get(id);
-      const meta = getClusterMetaForItem(item);
-      if (!meta) continue;
-      const { cluster, rank } = meta;
-      const prev = minIdx.get(cluster);
-      if (prev === undefined || i < prev) minIdx.set(cluster, i);
-      if (!byCluster.has(cluster)) byCluster.set(cluster, []);
-      byCluster.get(cluster).push({ id, rank });
+    /** @type {Map<number, string[]>} */
+    const rowToIds = new Map();
+    for (const id of order) {
+      const r = parseCreditRowFromId(id);
+      if (r < 0) continue;
+      if (!rowToIds.has(r)) rowToIds.set(r, []);
+      rowToIds.get(r).push(id);
     }
-
-    for (const arr of byCluster.values()) {
-      arr.sort((a, b) => a.rank - b.rank);
-    }
-
-    const emitted = new Set();
+    const rows = [...rowToIds.keys()].sort((a, b) => {
+      const ida = rowToIds.get(a)[0];
+      const idb = rowToIds.get(b)[0];
+      const itema = items.get(ida);
+      const itemb = items.get(idb);
+      const ta = roleSortTier(itema?.role || "");
+      const tb = roleSortTier(itemb?.role || "");
+      if (ta.tier !== tb.tier) return ta.tier - tb.tier;
+      return a - b;
+    });
     /** @type {string[]} */
     const out = [];
-    for (let i = 0; i < order.length; i++) {
-      const id = order[i];
-      if (emitted.has(id)) continue;
-      const item = items.get(id);
-      const meta = getClusterMetaForItem(item);
-      if (meta && i === minIdx.get(meta.cluster)) {
-        const list = byCluster.get(meta.cluster) || [];
-        for (const { id: cid } of list) {
-          if (!emitted.has(cid)) {
-            out.push(cid);
-            emitted.add(cid);
-          }
-        }
-        continue;
-      }
-      if (!meta) {
-        out.push(id);
-        emitted.add(id);
-      }
+    for (const row of rows) {
+      out.push(...(rowToIds.get(row) || []));
     }
     return out;
   }
@@ -836,7 +861,7 @@
     for (const run of runs) {
       const it0 = itemsById.get(run.ids[0]);
       if (!it0) continue;
-      const key = normalizeRoleKey(it0.role);
+      const key = canonicalRoleKeyForSort(it0.role);
       const tp = totalPeopleInRun(run);
 
       if (key === "host") host.push(run);
