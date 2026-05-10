@@ -117,6 +117,26 @@
     return parts.join(" ");
   }
 
+  /** Whole-word match only (e.g. Co-Director, not inside unrelated tokens). */
+  function roleContainsTraineeTrainerDirector(role) {
+    return /\b(trainee|trainer|director)\b/i.test(String(role || ""));
+  }
+
+  /**
+   * Pluralize only Trainee / Trainer / Director wherever they appear as words.
+   * Does not alter other words in the phrase.
+   */
+  function pluralizeTraineeTrainerDirectorWords(role) {
+    const t = String(role);
+    const words = ["trainee", "trainer", "director"];
+    let out = t;
+    for (const word of words) {
+      const re = new RegExp(`\\b(${word})\\b`, "gi");
+      out = out.replace(re, (m) => matchCaseWord(m, pluralizeWordLower(word)));
+    }
+    return out;
+  }
+
   function roleForDisplay(item) {
     if (item.kind === "imageCard") return "";
     if (item.kind === "peopleImage") return item.role || "—";
@@ -132,6 +152,7 @@
       norm === "contributing producers"
     )
       return base;
+    if (roleContainsTraineeTrainerDirector(base)) return pluralizeTraineeTrainerDirectorWords(base);
     return pluralizeRolePhrase(base);
   }
 
@@ -144,6 +165,8 @@
       if (/ZoomThanks\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--zoom-thanks";
       else if (/CLOUDflex_Broadcast_Logo\.webp/i.test(rawSrc)) imgModCls = " slide-credit-img--cloudflex-broadcast";
       else if (/vMix-Logo-White\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--vmix-logo";
+      else if (/ecammlogo_centered\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--ecamm-logo";
+      else if (/mimolive-logo\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--mimolive-logo";
       return `<div class="slide-credit-inner slide-credit-inner--image"><img class="slide-credit-img${imgModCls}" src="${src}" alt="${alt}" decoding="async" /></div>`;
     }
     if (item.kind === "peopleImage") {
@@ -221,6 +244,20 @@
         idSlug: "vmix",
         src: "images/vMix-Logo-White.png",
         alt: "vMix",
+      };
+    }
+    if (key === "ecamm") {
+      return {
+        idSlug: "ecamm",
+        src: "images/ecammlogo_centered.png",
+        alt: "Ecamm",
+      };
+    }
+    if (key === "mimolive") {
+      return {
+        idSlug: "mimolive",
+        src: "images/mimoLive-logo.png",
+        alt: "mimoLive",
       };
     }
     return null;

@@ -20,7 +20,7 @@
   --btn-gray-text: #ccc;
   --btn-gray-hover: #333;
   --font-size: 16px;
-  --font: system-ui, sans-serif;
+  --font: "Barlow", system-ui, sans-serif;
   --line-height-body: 1.5;
   --radius: 5px;
   --radius-lg: 6px;
@@ -743,6 +743,8 @@ select.remote-input {
 
 .slide-credit-img.slide-credit-img--zoom-thanks,
 .slide-credit-img.slide-credit-img--vmix-logo,
+.slide-credit-img.slide-credit-img--ecamm-logo,
+.slide-credit-img.slide-credit-img--mimolive-logo,
 .slide-credit-img.slide-credit-img--people-path {
   max-width: min(46cqw, 50%);
 }
@@ -759,6 +761,8 @@ select.remote-input {
 
 .frame-9-16 .slide-credit-img.slide-credit-img--zoom-thanks,
 .frame-9-16 .slide-credit-img.slide-credit-img--vmix-logo,
+.frame-9-16 .slide-credit-img.slide-credit-img--ecamm-logo,
+.frame-9-16 .slide-credit-img.slide-credit-img--mimolive-logo,
 .frame-9-16 .slide-credit-img.slide-credit-img--people-path {
   max-width: min(44cqw, 50%);
 }
@@ -773,6 +777,8 @@ select.remote-input {
 
 .workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--zoom-thanks,
 .workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--vmix-logo,
+.workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--ecamm-logo,
+.workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--mimolive-logo,
 .workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
 }
@@ -787,6 +793,8 @@ select.remote-input {
 
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--zoom-thanks,
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--vmix-logo,
+.workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--ecamm-logo,
+.workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--mimolive-logo,
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
 }
@@ -802,6 +810,8 @@ select.remote-input {
 
 .page-box--organizer .slide-credit-img.slide-credit-img--zoom-thanks,
 .page-box--organizer .slide-credit-img.slide-credit-img--vmix-logo,
+.page-box--organizer .slide-credit-img.slide-credit-img--ecamm-logo,
+.page-box--organizer .slide-credit-img.slide-credit-img--mimolive-logo,
 .page-box--organizer .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
 }
