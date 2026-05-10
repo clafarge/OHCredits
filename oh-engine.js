@@ -196,6 +196,7 @@
       else if (/vMix-Logo-White\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--vmix-logo";
       else if (/ecammlogo_centered\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--ecamm-logo";
       else if (/mimolive-logo\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--mimolive-logo";
+      else if (/OBSLogo\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--obs-logo";
       return `<div class="slide-credit-inner slide-credit-inner--image"><img class="slide-credit-img${imgModCls}" src="${src}" alt="${alt}" decoding="async" /></div>`;
     }
     if (item.kind === "peopleImage") {
@@ -287,6 +288,13 @@
         idSlug: "mimolive",
         src: "images/mimoLive-logo.png",
         alt: "mimoLive",
+      };
+    }
+    if (key === "obs") {
+      return {
+        idSlug: "obs",
+        src: "images/OBSLogo.png",
+        alt: "OBS",
       };
     }
     return null;

@@ -745,6 +745,7 @@ select.remote-input {
 .slide-credit-img.slide-credit-img--vmix-logo,
 .slide-credit-img.slide-credit-img--ecamm-logo,
 .slide-credit-img.slide-credit-img--mimolive-logo,
+.slide-credit-img.slide-credit-img--obs-logo,
 .slide-credit-img.slide-credit-img--people-path {
   max-width: min(46cqw, 50%);
 }
@@ -763,6 +764,7 @@ select.remote-input {
 .frame-9-16 .slide-credit-img.slide-credit-img--vmix-logo,
 .frame-9-16 .slide-credit-img.slide-credit-img--ecamm-logo,
 .frame-9-16 .slide-credit-img.slide-credit-img--mimolive-logo,
+.frame-9-16 .slide-credit-img.slide-credit-img--obs-logo,
 .frame-9-16 .slide-credit-img.slide-credit-img--people-path {
   max-width: min(44cqw, 50%);
 }
@@ -779,6 +781,7 @@ select.remote-input {
 .workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--vmix-logo,
 .workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--ecamm-logo,
 .workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--mimolive-logo,
+.workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--obs-logo,
 .workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
 }
@@ -795,6 +798,7 @@ select.remote-input {
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--vmix-logo,
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--ecamm-logo,
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--mimolive-logo,
+.workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--obs-logo,
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
 }
@@ -812,6 +816,7 @@ select.remote-input {
 .page-box--organizer .slide-credit-img.slide-credit-img--vmix-logo,
 .page-box--organizer .slide-credit-img.slide-credit-img--ecamm-logo,
 .page-box--organizer .slide-credit-img.slide-credit-img--mimolive-logo,
+.page-box--organizer .slide-credit-img.slide-credit-img--obs-logo,
 .page-box--organizer .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
 }
