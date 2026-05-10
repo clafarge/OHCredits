@@ -122,6 +122,11 @@
     return /\b(trainee|trainer|director)\b/i.test(String(role || ""));
   }
 
+  /** Whole-word "vmix" (any casing) → "vMix" for on-screen role titles. */
+  function normalizeVmixInRoleText(s) {
+    return String(s || "").replace(/\bvmix\b/gi, "vMix");
+  }
+
   /**
    * Pluralize only Trainee / Trainer / Director wherever they appear as words.
    * Does not alter other words in the phrase.
@@ -139,21 +144,22 @@
 
   function roleForDisplay(item) {
     if (item.kind === "imageCard") return "";
-    if (item.kind === "peopleImage") return item.role || "—";
+    if (item.kind === "peopleImage") return normalizeVmixInRoleText(item.role || "—");
     const base = item.role || "—";
-    if (item.kind === "customCard") return base;
+    if (item.kind === "customCard") return normalizeVmixInRoleText(base);
     const people = Array.isArray(item.people) ? item.people : [];
-    if (people.length <= 1) return base;
+    if (people.length <= 1) return normalizeVmixInRoleText(base);
     const norm = base.trim().toLowerCase().replace(/\s+/g, " ");
-    if (norm === "contributing producer") return pluralizeRolePhrase(base);
+    if (norm === "contributing producer") return normalizeVmixInRoleText(pluralizeRolePhrase(base));
     if (
       norm === "special thanks" ||
       norm === "tláloc traversal" ||
       norm === "contributing producers"
     )
-      return base;
-    if (roleContainsTraineeTrainerDirector(base)) return pluralizeTraineeTrainerDirectorWords(base);
-    return pluralizeRolePhrase(base);
+      return normalizeVmixInRoleText(base);
+    if (roleContainsTraineeTrainerDirector(base))
+      return normalizeVmixInRoleText(pluralizeTraineeTrainerDirectorWords(base));
+    return normalizeVmixInRoleText(pluralizeRolePhrase(base));
   }
 
   function creditInnerHtml(item) {
@@ -178,7 +184,7 @@
       }
       const src = escapeHtml(rawSrc);
       const roleHtml = escapeHtml(roleForDisplay(item));
-      const alt = escapeHtml(item.role ? `${item.role}` : rawSrc);
+      const alt = escapeHtml(item.role ? normalizeVmixInRoleText(item.role) : rawSrc);
       return `<div class="slide-credit-inner slide-credit-inner--image slide-credit-inner--people-image"><h2 class="slide-role">${roleHtml}</h2><img class="slide-credit-img slide-credit-img--people-path" src="${src}" alt="${alt}" decoding="async" /></div>`;
     }
     const roleHtml = escapeHtml(roleForDisplay(item));
