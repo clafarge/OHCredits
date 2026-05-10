@@ -189,6 +189,7 @@
     jsonStatus: document.getElementById("json-status"),
     btnAddJson: document.getElementById("btn-add-json"),
     btnClearJson: document.getElementById("btn-clear-json"),
+    btnClearPreview: document.getElementById("btn-clear-preview"),
     slide169: document.getElementById("slide-content-169"),
     slide916: document.getElementById("slide-content-916"),
     pageStrip: document.getElementById("page-strip"),
@@ -1063,6 +1064,18 @@
     renderPlayoutEmpty();
   }
 
+  /** Reset layout and previews only; keeps pasted JSON for edit + Add JSON. */
+  function clearPreviewFromJson() {
+    itemsById = new Map();
+    episodeHtml = null;
+    pages = [[]];
+    parkedIds = [];
+    setJsonStatus("Cleared layout and previews; JSON unchanged — use Add JSON to rebuild.", "ok");
+    renderEpisodeTray();
+    renderPageStrip();
+    renderPlayoutEmpty();
+  }
+
   /**
    * @param {string} text
    * @param {(msg: string, kind?: string) => void} [setStatus]
@@ -1207,7 +1220,16 @@
   }
 
   function renderPlayoutEmpty() {
-    const msg = `<p class="slide-empty">No data — paste JSON and use Add JSON, or Clear JSON to start fresh.</p>`;
+    const hasContent = itemsById.size > 0 || episodeHtml;
+    const hasJson = els.jsonInput && els.jsonInput.value.trim();
+    let msg;
+    if (hasContent) {
+      msg = `<p class="slide-empty">Use <strong>Preview first slide</strong> or <strong>Play both</strong> to see credits.</p>`;
+    } else if (hasJson) {
+      msg = `<p class="slide-empty">No layout — use <strong>Add JSON</strong> to rebuild from the box below, or <strong>Clear JSON</strong> to empty it.</p>`;
+    } else {
+      msg = `<p class="slide-empty">No data — paste JSON and use Add JSON, or Clear JSON to start fresh.</p>`;
+    }
     els.slide169.innerHTML = msg;
     els.slide916.innerHTML = msg;
   }
@@ -1483,6 +1505,7 @@
     els.toggleJson.disabled = playing;
     if (els.btnAddJson) els.btnAddJson.disabled = playing;
     if (els.btnClearJson) els.btnClearJson.disabled = playing;
+    if (els.btnClearPreview) els.btnClearPreview.disabled = playing;
     if (els.toggleRemote) els.toggleRemote.disabled = playing;
     if (els.btnPublishCredits) els.btnPublishCredits.disabled = playing;
     if (els.btnCopyCloud169) els.btnCopyCloud169.disabled = playing;
@@ -2021,6 +2044,9 @@
   }
   if (els.btnClearJson) {
     els.btnClearJson.addEventListener("click", clearDesignFromJson);
+  }
+  if (els.btnClearPreview) {
+    els.btnClearPreview.addEventListener("click", clearPreviewFromJson);
   }
 
   els.btnPreview.addEventListener("click", previewFirstSlide);
