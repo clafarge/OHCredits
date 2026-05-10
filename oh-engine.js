@@ -128,6 +128,18 @@
   }
 
   /**
+   * Slide role line is visually ALL CAPS, except whole-word vMix (lower v, upper M) is preserved.
+   * Masks matches before .toUpperCase() so "VMIX OPERATOR" reliably becomes "vMix OPERATOR".
+   */
+  function uppercaseRoleTitlePreserveVmix(s) {
+    const raw = normalizeVmixInRoleText(String(s || ""));
+    if (!raw) return raw;
+    const MARK = "\uE000";
+    const masked = raw.replace(/\bvmix\b/gi, MARK);
+    return masked.toUpperCase().split(MARK).join("vMix");
+  }
+
+  /**
    * Pluralize only Trainee / Trainer / Director wherever they appear as words.
    * Does not alter other words in the phrase.
    */
@@ -144,28 +156,33 @@
 
   function roleForDisplay(item) {
     if (item.kind === "imageCard") return "";
-    if (item.kind === "peopleImage") return normalizeVmixInRoleText(item.role || "—");
+    if (item.kind === "peopleImage") return uppercaseRoleTitlePreserveVmix(item.role || "—");
+
     const base = item.role || "—";
-    if (item.kind === "customCard") return normalizeVmixInRoleText(base);
+    if (item.kind === "customCard") return uppercaseRoleTitlePreserveVmix(base);
+
     const people = Array.isArray(item.people) ? item.people : [];
-    if (people.length <= 1) return normalizeVmixInRoleText(base);
+    if (people.length <= 1) return uppercaseRoleTitlePreserveVmix(base);
+
     const norm = base.trim().toLowerCase().replace(/\s+/g, " ");
-    if (norm === "contributing producer") return normalizeVmixInRoleText(pluralizeRolePhrase(base));
-    if (
+    /** @type {string} */
+    let t;
+    if (norm === "contributing producer") t = pluralizeRolePhrase(base);
+    else if (
       norm === "special thanks" ||
       norm === "tláloc traversal" ||
       norm === "contributing producers"
     )
-      return normalizeVmixInRoleText(base);
-    if (norm === "engineer in charge") {
+      t = base;
+    else if (norm === "engineer in charge") {
       const parts = base.trim().split(/\s+/);
       const firstWord = parts[0] || "Engineer";
       const engineers = matchCaseWord(firstWord, "engineers");
-      return normalizeVmixInRoleText(`${engineers} in Charge`);
-    }
-    if (roleContainsTraineeTrainerDirector(base))
-      return normalizeVmixInRoleText(pluralizeTraineeTrainerDirectorWords(base));
-    return normalizeVmixInRoleText(pluralizeRolePhrase(base));
+      t = `${engineers} in Charge`;
+    } else if (roleContainsTraineeTrainerDirector(base)) t = pluralizeTraineeTrainerDirectorWords(base);
+    else t = pluralizeRolePhrase(base);
+
+    return uppercaseRoleTitlePreserveVmix(t);
   }
 
   function creditInnerHtml(item) {
@@ -190,7 +207,7 @@
       }
       const src = escapeHtml(rawSrc);
       const roleHtml = escapeHtml(roleForDisplay(item));
-      const alt = escapeHtml(item.role ? normalizeVmixInRoleText(item.role) : rawSrc);
+      const alt = escapeHtml(item.role ? roleForDisplay(item) : rawSrc);
       return `<div class="slide-credit-inner slide-credit-inner--image slide-credit-inner--people-image"><h2 class="slide-role">${roleHtml}</h2><img class="slide-credit-img slide-credit-img--people-path" src="${src}" alt="${alt}" decoding="async" /></div>`;
     }
     const roleHtml = escapeHtml(roleForDisplay(item));

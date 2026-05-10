@@ -841,7 +841,7 @@ select.remote-input {
   color: var(--role);
   margin: 0 0 0.125em;
   line-height: 1.2;
-  text-transform: uppercase;
+  /* Uppercase applied in oh-engine (uppercaseRoleTitlePreserveVmix) so “vMix” can stay mixed-case */
 }
 
 .slide-people {
