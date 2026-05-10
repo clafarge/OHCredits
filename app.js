@@ -179,7 +179,9 @@
         imagePaths.forEach((pathStr, ii) => pushPeopleImageCard(pathStr, ii));
       }
     }
-    return { items, order };
+    let finalOrder = reorderItemOrderForRoleClusters(order, items);
+    const remapped = remapClusterItemIds(finalOrder, items);
+    return { items: remapped.items, order: remapped.order };
   }
 
   const els = {
@@ -619,6 +621,168 @@
 
   function normalizeRoleKey(role) {
     return (role || "").trim().toLowerCase().replace(/\s+/g, " ");
+  }
+
+  /**
+   * Related trainer/trainee role lines share a cluster id and fixed sort rank so they stay adjacent
+   * and render as Engineer → Trainer → Trainee (etc.) regardless of JSON order.
+   * @param {{ role: string, people?: string[], kind?: string } | undefined} item
+   * @returns {{ cluster: string, rank: number } | null}
+   */
+  function getClusterMetaForItem(item) {
+    if (!item || item.kind === "imageCard" || item.kind === "peopleImage") return null;
+    const key = normalizeRoleKey(item.role);
+    if (key === "engineer in charge") return { cluster: "eic", rank: 0 };
+    if (key === "trainer - eic") return { cluster: "eic", rank: 1 };
+    if (key === "trainee - eic") return { cluster: "eic", rank: 2 };
+    if (key === "technical director") return { cluster: "td", rank: 0 };
+    if (key === "trainer - td") return { cluster: "td", rank: 1 };
+    if (key === "trainee - td") return { cluster: "td", rank: 2 };
+    if (key === "rfi documentor" || key === "rfi documenter") return { cluster: "rfi", rank: 0 };
+    if (key === "rfi - trainer") return { cluster: "rfi", rank: 1 };
+    if (key === "rfi - trainee") return { cluster: "rfi", rank: 2 };
+    return null;
+  }
+
+  /**
+   * @param {string} id
+   */
+  function parseCreditRowFromId(id) {
+    const m = /^c-(\d+)-/.exec(id);
+    return m ? parseInt(m[1], 10) : -1;
+  }
+
+  /**
+   * @param {Map<string, unknown>} items
+   */
+  function maxCreditRowInItems(items) {
+    let max = -1;
+    for (const id of items.keys()) {
+      const r = parseCreditRowFromId(id);
+      if (r >= 0) max = Math.max(max, r);
+    }
+    return max;
+  }
+
+  /**
+   * @param {string[]} order
+   * @param {Map<string, { role: string, people: string[] }>} items
+   */
+  function reorderItemOrderForRoleClusters(order, items) {
+    if (order.length === 0) return order;
+    /** @type {Map<string, number>} */
+    const minIdx = new Map();
+    /** @type {Map<string, { id: string, rank: number }[]>} */
+    const byCluster = new Map();
+
+    for (let i = 0; i < order.length; i++) {
+      const id = order[i];
+      const item = items.get(id);
+      const meta = getClusterMetaForItem(item);
+      if (!meta) continue;
+      const { cluster, rank } = meta;
+      const prev = minIdx.get(cluster);
+      if (prev === undefined || i < prev) minIdx.set(cluster, i);
+      if (!byCluster.has(cluster)) byCluster.set(cluster, []);
+      byCluster.get(cluster).push({ id, rank });
+    }
+
+    for (const arr of byCluster.values()) {
+      arr.sort((a, b) => a.rank - b.rank);
+    }
+
+    const emitted = new Set();
+    /** @type {string[]} */
+    const out = [];
+    for (let i = 0; i < order.length; i++) {
+      const id = order[i];
+      if (emitted.has(id)) continue;
+      const item = items.get(id);
+      const meta = getClusterMetaForItem(item);
+      if (meta && i === minIdx.get(meta.cluster)) {
+        const list = byCluster.get(meta.cluster) || [];
+        for (const { id: cid } of list) {
+          if (!emitted.has(cid)) {
+            out.push(cid);
+            emitted.add(cid);
+          }
+        }
+        continue;
+      }
+      if (!meta) {
+        out.push(id);
+        emitted.add(id);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Give cluster members the same credit row + sequential g indices so starter layouts keep one run per group.
+   * @param {string[]} order
+   * @param {Map<string, { role: string, people: string[] }>} items
+   */
+  function remapClusterItemIds(order, items) {
+    let curOrder = order.slice();
+    let curItems = new Map(items);
+    const clusterTypes = ["eic", "td", "rfi"];
+
+    for (const cid of clusterTypes) {
+      /** @type {string[]} */
+      const memberIds = [];
+      for (const id of curOrder) {
+        const it = curItems.get(id);
+        const m = getClusterMetaForItem(it);
+        if (m && m.cluster === cid) memberIds.push(id);
+      }
+      if (memberIds.length <= 1) continue;
+
+      const minR = Math.min(...memberIds.map((id) => parseCreditRowFromId(id)));
+
+      /**
+       * @param {number} row
+       */
+      function proposedIds(row) {
+        return memberIds.map((_, j) => `c-${row}-g${j}`);
+      }
+
+      /**
+       * @param {number} row
+       * @param {string[]} proposed
+       */
+      function collides(row, proposed) {
+        for (let j = 0; j < proposed.length; j++) {
+          const cand = proposed[j];
+          const oldId = memberIds[j];
+          if (cand === oldId) continue;
+          if (curItems.has(cand) && !memberIds.includes(cand)) return true;
+        }
+        return false;
+      }
+
+      let targetRow = minR;
+      let proposed = proposedIds(targetRow);
+      while (collides(targetRow, proposed)) {
+        targetRow = maxCreditRowInItems(curItems) + 1;
+        proposed = proposedIds(targetRow);
+      }
+
+      /** @type {Map<string, string>} */
+      const localMap = new Map();
+      for (let j = 0; j < memberIds.length; j++) {
+        localMap.set(memberIds[j], proposed[j]);
+      }
+
+      const nextItems = new Map();
+      for (const [k, v] of curItems) {
+        const nk = localMap.get(k) || k;
+        nextItems.set(nk, v);
+      }
+      curItems = nextItems;
+      curOrder = curOrder.map((id) => localMap.get(id) || id);
+    }
+
+    return { order: curOrder, items: curItems };
   }
 
   function totalPeopleInRun(run) {

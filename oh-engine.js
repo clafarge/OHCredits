@@ -157,6 +157,12 @@
       norm === "contributing producers"
     )
       return normalizeVmixInRoleText(base);
+    if (norm === "engineer in charge") {
+      const parts = base.trim().split(/\s+/);
+      const firstWord = parts[0] || "Engineer";
+      const engineers = matchCaseWord(firstWord, "engineers");
+      return normalizeVmixInRoleText(`${engineers} in Charge`);
+    }
     if (roleContainsTraineeTrainerDirector(base))
       return normalizeVmixInRoleText(pluralizeTraineeTrainerDirectorWords(base));
     return normalizeVmixInRoleText(pluralizeRolePhrase(base));
