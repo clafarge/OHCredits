@@ -203,6 +203,7 @@
       const alt = typeof item.alt === "string" ? escapeHtml(item.alt) : "";
       let imgModCls = "";
       if (/ZoomThanks\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--zoom-thanks";
+      else if (/OHTitle\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--oh-title";
       else if (/CLOUDflex_Broadcast_Logo\.webp/i.test(rawSrc)) imgModCls = " slide-credit-img--cloudflex-broadcast";
       else if (/vMix-Logo-White\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--vmix-logo";
       else if (/ecammlogo_centered\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--ecamm-logo";

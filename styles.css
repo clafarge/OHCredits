@@ -755,6 +755,12 @@ select.remote-input {
   max-width: min(46cqw, 50%, calc(1000 / 489 * min(52cqh, 78%)));
 }
 
+/** Office Hours title card (495×454): wider in 16×9, tighter in 9×16 than generic image caps. */
+.slide-credit-img.slide-credit-img--oh-title {
+  max-width: min(58cqw, 62%);
+  max-height: min(44cqh, 72%);
+}
+
 .frame-9-16 .slide-credit-img {
   max-width: min(88cqw, 100%);
   max-height: min(48cqh, 72%);
@@ -771,6 +777,16 @@ select.remote-input {
 
 .frame-9-16 .slide-credit-img.slide-credit-img--cloudflex-broadcast {
   max-width: min(44cqw, 50%, calc(1000 / 489 * min(48cqh, 72%)));
+}
+
+.frame-9-16 .slide-credit-img.slide-credit-img--oh-title {
+  max-width: min(36cqw, 42%);
+  max-height: min(20cqh, 34%);
+}
+
+.frame-16-9 .slide-credit-img.slide-credit-img--oh-title {
+  max-width: min(62cqw, 66%);
+  max-height: min(48cqh, 78%);
 }
 
 .workspace-grid .frame-16-9 .slide-credit-img {
@@ -805,6 +821,16 @@ select.remote-input {
 
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--cloudflex-broadcast {
   max-width: min(50%, calc(1000 / 489 * min(42cqh, 200px)));
+}
+
+.workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--oh-title {
+  max-width: min(62cqw, 66%);
+  max-height: min(48cqh, 220px);
+}
+
+.workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--oh-title {
+  max-width: min(36cqw, 42%);
+  max-height: min(20cqh, 120px);
 }
 
 .page-box--organizer .slide-credit-img {
@@ -1607,6 +1633,51 @@ html.player-broadcast-active .player-broadcast-fit-inner {
   );
 }
 
+/* Player fluid 16×9: larger credit type (9×16 clamps above stay as-is). */
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .frame-16-9
+  .slide-episode-title {
+  font-size: clamp(
+    1.25rem,
+    calc(8.1cqw * var(--oh-fluid-scale, 1)),
+    calc(3.75rem * var(--oh-fluid-scale, 1))
+  );
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .frame-16-9
+  .slide-episode-date {
+  font-size: clamp(
+    1.05rem,
+    calc(6.2cqw * var(--oh-fluid-scale, 1)),
+    calc(2.55rem * var(--oh-fluid-scale, 1))
+  );
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .frame-16-9 .slide-role {
+  font-size: clamp(
+    17px,
+    calc(6.2cqw * var(--oh-fluid-scale, 1)),
+    calc(2.9rem * var(--oh-fluid-scale, 1))
+  );
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .frame-16-9 .slide-people {
+  font-size: clamp(
+    15px,
+    calc(5.9cqw * var(--oh-fluid-scale, 1)),
+    calc(2.6rem * var(--oh-fluid-scale, 1))
+  );
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .frame-16-9 .slide-empty {
+  font-size: clamp(
+    14px,
+    calc(4.4cqw * var(--oh-fluid-scale, 1)),
+    calc(1.75rem * var(--oh-fluid-scale, 1))
+  );
+}
+
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .slide-credit-img {
   max-width: min(calc(92cqw / var(--oh-fluid-scale, 1)), 100%);
   max-height: min(calc(52cqh / var(--oh-fluid-scale, 1)), 78%);
@@ -1653,6 +1724,20 @@ html.player-broadcast-active .player-broadcast-fit-inner {
   .frame-9-16
   .slide-credit-img.slide-credit-img--people-path {
   max-width: min(calc(44cqw / var(--oh-fluid-scale, 1)), 50%);
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .frame-16-9
+  .slide-credit-img.slide-credit-img--oh-title {
+  max-width: min(calc(62cqw / var(--oh-fluid-scale, 1)), 66%);
+  max-height: min(calc(48cqh / var(--oh-fluid-scale, 1)), 78%);
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .frame-9-16
+  .slide-credit-img.slide-credit-img--oh-title {
+  max-width: min(calc(36cqw / var(--oh-fluid-scale, 1)), 42%);
+  max-height: min(calc(20cqh / var(--oh-fluid-scale, 1)), 34%);
 }
 
 /*
@@ -1792,6 +1877,37 @@ html.player-broadcast-active .player-broadcast-fit-inner {
 .player-body.player-body--hd1440 .frame-9-16 .slide-empty,
 .player-body.player-body--hd4k .frame-9-16 .slide-empty {
   font-size: 1cqh;
+}
+
+/* HD 16×9: larger credit type than shared defaults (9×16 overrides above unchanged). */
+.player-body.player-body--hd1080 .frame-16-9 .slide-episode-title,
+.player-body.player-body--hd1440 .frame-16-9 .slide-episode-title,
+.player-body.player-body--hd4k .frame-16-9 .slide-episode-title {
+  font-size: 6.7cqh;
+}
+
+.player-body.player-body--hd1080 .frame-16-9 .slide-episode-date,
+.player-body.player-body--hd1440 .frame-16-9 .slide-episode-date,
+.player-body.player-body--hd4k .frame-16-9 .slide-episode-date {
+  font-size: 4cqh;
+}
+
+.player-body.player-body--hd1080 .frame-16-9 .slide-role,
+.player-body.player-body--hd1440 .frame-16-9 .slide-role,
+.player-body.player-body--hd4k .frame-16-9 .slide-role {
+  font-size: 3.75cqh;
+}
+
+.player-body.player-body--hd1080 .frame-16-9 .slide-people,
+.player-body.player-body--hd1440 .frame-16-9 .slide-people,
+.player-body.player-body--hd4k .frame-16-9 .slide-people {
+  font-size: 3.55cqh;
+}
+
+.player-body.player-body--hd1080 .frame-16-9 .slide-empty,
+.player-body.player-body--hd1440 .frame-16-9 .slide-empty,
+.player-body.player-body--hd4k .frame-16-9 .slide-empty {
+  font-size: 2.65cqh;
 }
 
 /*
