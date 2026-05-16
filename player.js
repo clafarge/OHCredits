@@ -85,14 +85,19 @@
     return null;
   }
 
+  /** Escape `\`, `%`, `_` so PostgREST `ilike` is an exact case-insensitive match. */
+  function escapePostgrestIlikePattern(value) {
+    return String(value).replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+  }
+
   /**
    * @param {{ supabaseUrl: string, supabaseAnonKey: string }} backend
    * @param {string} eventCode
    * @returns {Promise<object | null>}
    */
   async function fetchDesignFromSupabase(backend, eventCode) {
-    const filter = encodeURIComponent(eventCode);
-    const url = `${backend.supabaseUrl}/rest/v1/credit_events?event_code=eq.${filter}&select=design`;
+    const filter = encodeURIComponent(escapePostgrestIlikePattern(eventCode));
+    const url = `${backend.supabaseUrl}/rest/v1/credit_events?event_code=ilike.${filter}&select=design&limit=1`;
     let res;
     try {
       res = await fetch(url, {

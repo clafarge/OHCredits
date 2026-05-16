@@ -312,8 +312,19 @@
   }
 
   /**
+   * Split `?platform=` value into tokens (comma or pipe; vMix cannot load URLs with commas in the query).
+   * @param {string | null | undefined} platformQueryString
+   * @returns {string[]}
+   */
+  function splitPlatformQueryTokens(platformQueryString) {
+    const raw = String(platformQueryString || "").trim();
+    if (!raw) return [];
+    return raw.split(/[,|]/).map((s) => s.trim()).filter(Boolean);
+  }
+
+  /**
    * Player-only: strip legacy default CLOUDflex closing page from saved designs, then insert
-   * partner logos from `?platform=a,b` in list order immediately before the Office Hours title slide.
+   * partner logos from `?platform=a,b` or `?platform=a|b` in list order immediately before the Office Hours title slide.
    * @param {object} state
    * @param {string | null | undefined} platformQueryString
    * @returns {object}
@@ -345,8 +356,7 @@
       }
     }
 
-    const raw = String(platformQueryString || "").trim();
-    const parts = raw ? raw.split(",").map((s) => s.trim()).filter(Boolean) : [];
+    const parts = splitPlatformQueryTokens(platformQueryString);
     /** @type {{ idSlug: string, src: string, alt: string }[]} */
     const logos = [];
     for (const part of parts) {
