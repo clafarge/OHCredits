@@ -1532,45 +1532,132 @@ html.player-broadcast-active .player-broadcast-fit-inner {
   );
 }
 
-/* Browser player (no fixed HD canvas): slightly larger type than responsive clamps alone suggested. */
+/*
+ * Browser player (no fixed HD canvas): cqw/cqh clamps scaled from viewport (--oh-fluid-scale in player.js).
+ */
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .slide-episode-title {
-  font-size: clamp(1.25rem, 6.8cqw, 3.25rem);
+  font-size: clamp(
+    1.25rem,
+    calc(6.8cqw * var(--oh-fluid-scale, 1)),
+    calc(3.25rem * var(--oh-fluid-scale, 1))
+  );
 }
 
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .slide-episode-date {
-  font-size: clamp(1.05rem, 5.2cqw, 2.2rem);
+  font-size: clamp(
+    1.05rem,
+    calc(5.2cqw * var(--oh-fluid-scale, 1)),
+    calc(2.2rem * var(--oh-fluid-scale, 1))
+  );
 }
 
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .slide-role {
-  font-size: clamp(17px, 5.2cqw, 2.5rem);
+  font-size: clamp(
+    17px,
+    calc(5.2cqw * var(--oh-fluid-scale, 1)),
+    calc(2.5rem * var(--oh-fluid-scale, 1))
+  );
 }
 
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .slide-people {
-  font-size: clamp(15px, 4.9cqw, 2.25rem);
+  font-size: clamp(
+    15px,
+    calc(4.9cqw * var(--oh-fluid-scale, 1)),
+    calc(2.25rem * var(--oh-fluid-scale, 1))
+  );
 }
 
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .frame-9-16 .slide-episode-title {
-  font-size: clamp(1.05rem, 5.8cqh, 2.65rem);
+  font-size: clamp(
+    1.05rem,
+    calc(5.8cqh * var(--oh-fluid-scale, 1)),
+    calc(2.65rem * var(--oh-fluid-scale, 1))
+  );
 }
 
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .frame-9-16 .slide-episode-date {
-  font-size: clamp(0.9rem, 4.2cqh, 1.9rem);
+  font-size: clamp(
+    0.9rem,
+    calc(4.2cqh * var(--oh-fluid-scale, 1)),
+    calc(1.9rem * var(--oh-fluid-scale, 1))
+  );
 }
 
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .frame-9-16 .slide-role {
-  font-size: clamp(14px, 4.6cqh, 1.95rem);
+  font-size: clamp(
+    14px,
+    calc(4.6cqh * var(--oh-fluid-scale, 1)),
+    calc(1.95rem * var(--oh-fluid-scale, 1))
+  );
 }
 
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .frame-9-16 .slide-people {
-  font-size: clamp(13px, 4.3cqh, 1.85rem);
+  font-size: clamp(
+    13px,
+    calc(4.3cqh * var(--oh-fluid-scale, 1)),
+    calc(1.85rem * var(--oh-fluid-scale, 1))
+  );
 }
 
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .frame-9-16 .slide-empty {
-  font-size: clamp(12px, 3.4cqh, 1.1rem);
+  font-size: clamp(
+    12px,
+    calc(3.4cqh * var(--oh-fluid-scale, 1)),
+    calc(1.1rem * var(--oh-fluid-scale, 1))
+  );
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k) .slide-credit-img {
+  max-width: min(calc(92cqw / var(--oh-fluid-scale, 1)), 100%);
+  max-height: min(calc(52cqh / var(--oh-fluid-scale, 1)), 78%);
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .slide-credit-img.slide-credit-img--zoom-thanks,
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .slide-credit-img.slide-credit-img--vmix-logo,
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .slide-credit-img.slide-credit-img--ecamm-logo,
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .slide-credit-img.slide-credit-img--mimolive-logo,
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .slide-credit-img.slide-credit-img--obs-logo,
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .slide-credit-img.slide-credit-img--people-path {
+  max-width: min(calc(46cqw / var(--oh-fluid-scale, 1)), 50%);
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .frame-9-16
+  .slide-credit-img {
+  max-width: min(calc(88cqw / var(--oh-fluid-scale, 1)), 100%);
+  max-height: min(calc(48cqh / var(--oh-fluid-scale, 1)), 72%);
+}
+
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .frame-9-16
+  .slide-credit-img.slide-credit-img--zoom-thanks,
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .frame-9-16
+  .slide-credit-img.slide-credit-img--vmix-logo,
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .frame-9-16
+  .slide-credit-img.slide-credit-img--ecamm-logo,
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .frame-9-16
+  .slide-credit-img.slide-credit-img--mimolive-logo,
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .frame-9-16
+  .slide-credit-img.slide-credit-img--obs-logo,
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .frame-9-16
+  .slide-credit-img.slide-credit-img--people-path {
+  max-width: min(calc(44cqw / var(--oh-fluid-scale, 1)), 50%);
 }
 
 /*
  * Fixed broadcast canvases for vMix / NDI (logical pixels; letterboxed via zoom above).
+ * hd=auto picks tier from viewport; type uses cqw/cqh like images (not rem).
  * 1080p: ?hd=1 | hd=1080 | output=1080 → 1920×1080 or 1080×1920.
  * 1440p QHD: ?hd=1440 | hd=qhd | output=1440 | output=2560 → 2560×1440 or 1440×2560.
  * 4K: ?hd=4k | hd=2160 | uhd | scale=2 | scale=200 → 3840×2160 or 2160×3840.
@@ -1629,54 +1716,82 @@ html.player-broadcast-active .player-broadcast-fit-inner {
   box-shadow: none;
 }
 
-.player-body.player-body--hd1080 .slide-layer {
-  padding: 56px 72px;
+/*
+ * HD tiers: type and padding use cqw/cqh (same units as images) so letterbox zoom
+ * scales text and logos together. rem was tied to <html> and stayed small in vMix.
+ */
+.player-body.player-body--hd1080 .slide-layer,
+.player-body.player-body--hd1440 .slide-layer,
+.player-body.player-body--hd4k .slide-layer {
+  padding: 5.19cqh 3.75cqw;
 }
 
-.player-body.player-body--hd1080 .slide-episode-title {
-  font-size: 3.75rem;
+.player-body.player-body--hd1080 .slide-episode-title,
+.player-body.player-body--hd1440 .slide-episode-title,
+.player-body.player-body--hd4k .slide-episode-title {
+  font-size: 5.56cqh;
   font-weight: 400;
 }
 
-.player-body.player-body--hd1080 .slide-episode-date {
-  font-size: 2.25rem;
+.player-body.player-body--hd1080 .slide-episode-date,
+.player-body.player-body--hd1440 .slide-episode-date,
+.player-body.player-body--hd4k .slide-episode-date {
+  font-size: 3.33cqh;
 }
 
-.player-body.player-body--hd1080 .slide-role {
-  font-size: 2.125rem;
+.player-body.player-body--hd1080 .slide-role,
+.player-body.player-body--hd1440 .slide-role,
+.player-body.player-body--hd4k .slide-role {
+  font-size: 3.15cqh;
 }
 
-.player-body.player-body--hd1080 .slide-people {
-  font-size: 2rem;
+.player-body.player-body--hd1080 .slide-people,
+.player-body.player-body--hd1440 .slide-people,
+.player-body.player-body--hd4k .slide-people {
+  font-size: 2.96cqh;
   line-height: 1.38;
 }
 
-.player-body.player-body--hd1080 .slide-empty {
-  font-size: 1.5rem;
+.player-body.player-body--hd1080 .slide-empty,
+.player-body.player-body--hd1440 .slide-empty,
+.player-body.player-body--hd4k .slide-empty {
+  font-size: 2.22cqh;
 }
 
-.player-body.player-body--hd1080 .frame-9-16 .slide-layer {
-  padding: 48px 36px;
+.player-body.player-body--hd1080 .frame-9-16 .slide-layer,
+.player-body.player-body--hd1440 .frame-9-16 .slide-layer,
+.player-body.player-body--hd4k .frame-9-16 .slide-layer {
+  padding: 2.5cqh 3.33cqw;
 }
 
-.player-body.player-body--hd1080 .frame-9-16 .slide-episode-title {
-  font-size: 2.85rem;
+.player-body.player-body--hd1080 .frame-9-16 .slide-episode-title,
+.player-body.player-body--hd1440 .frame-9-16 .slide-episode-title,
+.player-body.player-body--hd4k .frame-9-16 .slide-episode-title {
+  font-size: 2.375cqh;
 }
 
-.player-body.player-body--hd1080 .frame-9-16 .slide-episode-date {
-  font-size: 1.85rem;
+.player-body.player-body--hd1080 .frame-9-16 .slide-episode-date,
+.player-body.player-body--hd1440 .frame-9-16 .slide-episode-date,
+.player-body.player-body--hd4k .frame-9-16 .slide-episode-date {
+  font-size: 1.54cqh;
 }
 
-.player-body.player-body--hd1080 .frame-9-16 .slide-role {
-  font-size: 1.625rem;
+.player-body.player-body--hd1080 .frame-9-16 .slide-role,
+.player-body.player-body--hd1440 .frame-9-16 .slide-role,
+.player-body.player-body--hd4k .frame-9-16 .slide-role {
+  font-size: 1.35cqh;
 }
 
-.player-body.player-body--hd1080 .frame-9-16 .slide-people {
-  font-size: 1.5rem;
+.player-body.player-body--hd1080 .frame-9-16 .slide-people,
+.player-body.player-body--hd1440 .frame-9-16 .slide-people,
+.player-body.player-body--hd4k .frame-9-16 .slide-people {
+  font-size: 1.25cqh;
 }
 
-.player-body.player-body--hd1080 .frame-9-16 .slide-empty {
-  font-size: 1.2rem;
+.player-body.player-body--hd1080 .frame-9-16 .slide-empty,
+.player-body.player-body--hd1440 .frame-9-16 .slide-empty,
+.player-body.player-body--hd4k .frame-9-16 .slide-empty {
+  font-size: 1cqh;
 }
 
 /*
@@ -1722,56 +1837,6 @@ html.player-broadcast-active .player-broadcast-fit-inner {
   box-shadow: none;
 }
 
-.player-body.player-body--hd1440 .slide-layer {
-  padding: 75px 96px;
-}
-
-.player-body.player-body--hd1440 .slide-episode-title {
-  font-size: 5rem;
-  font-weight: 400;
-}
-
-.player-body.player-body--hd1440 .slide-episode-date {
-  font-size: 3rem;
-}
-
-.player-body.player-body--hd1440 .slide-role {
-  font-size: 2.83rem;
-}
-
-.player-body.player-body--hd1440 .slide-people {
-  font-size: 2.67rem;
-  line-height: 1.38;
-}
-
-.player-body.player-body--hd1440 .slide-empty {
-  font-size: 2rem;
-}
-
-.player-body.player-body--hd1440 .frame-9-16 .slide-layer {
-  padding: 64px 48px;
-}
-
-.player-body.player-body--hd1440 .frame-9-16 .slide-episode-title {
-  font-size: 3.8rem;
-}
-
-.player-body.player-body--hd1440 .frame-9-16 .slide-episode-date {
-  font-size: 2.47rem;
-}
-
-.player-body.player-body--hd1440 .frame-9-16 .slide-role {
-  font-size: 2.17rem;
-}
-
-.player-body.player-body--hd1440 .frame-9-16 .slide-people {
-  font-size: 2rem;
-}
-
-.player-body.player-body--hd1440 .frame-9-16 .slide-empty {
-  font-size: 1.6rem;
-}
-
 /*
  * 4K UHD (3840×2160): ~2× the 1080p broadcast tier. Use ?hd=4k or ?scale=2 (or scale=200).
  * Set vMix browser input to 3840×2160 and zoom 100% for 1:1 pixels.
@@ -1815,52 +1880,3 @@ html.player-broadcast-active .player-broadcast-fit-inner {
   box-shadow: none;
 }
 
-.player-body.player-body--hd4k .slide-layer {
-  padding: 112px 144px;
-}
-
-.player-body.player-body--hd4k .slide-episode-title {
-  font-size: 7.5rem;
-  font-weight: 400;
-}
-
-.player-body.player-body--hd4k .slide-episode-date {
-  font-size: 4.5rem;
-}
-
-.player-body.player-body--hd4k .slide-role {
-  font-size: 4.25rem;
-}
-
-.player-body.player-body--hd4k .slide-people {
-  font-size: 4rem;
-  line-height: 1.38;
-}
-
-.player-body.player-body--hd4k .slide-empty {
-  font-size: 3rem;
-}
-
-.player-body.player-body--hd4k .frame-9-16 .slide-layer {
-  padding: 96px 72px;
-}
-
-.player-body.player-body--hd4k .frame-9-16 .slide-episode-title {
-  font-size: 5.7rem;
-}
-
-.player-body.player-body--hd4k .frame-9-16 .slide-episode-date {
-  font-size: 3.7rem;
-}
-
-.player-body.player-body--hd4k .frame-9-16 .slide-role {
-  font-size: 3.25rem;
-}
-
-.player-body.player-body--hd4k .frame-9-16 .slide-people {
-  font-size: 3rem;
-}
-
-.player-body.player-body--hd4k .frame-9-16 .slide-empty {
-  font-size: 2.4rem;
-}

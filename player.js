@@ -173,7 +173,20 @@
   const embed169 = parseEmbed169Layout(params);
 
   /**
+   * Pick 1080 / 1440 / 4K canvas from browser viewport (for ?hd=auto).
+   * @returns {"1080" | "1440" | "4k" | null}
+   */
+  function detectBroadcastTierFromViewport() {
+    const px = Math.max(window.innerWidth, window.innerHeight);
+    if (px >= 3400) return "4k";
+    if (px >= 2200) return "1440";
+    if (px >= 1000) return "1080";
+    return null;
+  }
+
+  /**
    * Fixed “broadcast” canvas: avoids vw/rem caps that stay tiny on large displays.
+   * - hd=auto → tier from window size (see detectBroadcastTierFromViewport)
    * - hd=1|1080|1080p → 1920×1080 (or 1080×1920 vertical; with layout=169 → always 1920×1080 + pillarbox)
    * - hd=1440|1440p|qhd or output=1440|qhd|2560 → 2560×1440 (or 1440×2560 vertical; layout=169 → 2560×1440 + pillarbox)
    * - hd=4k|2160|uhd or output=2160 or scale=2|200 → 3840×2160 (or 2160×3840 vertical; layout=169 → 3840×2160 + pillarbox)
@@ -182,6 +195,7 @@
    */
   function parseBroadcastTier(p) {
     const h = (p.get("hd") || "").toLowerCase().trim();
+    if (h === "auto") return detectBroadcastTierFromViewport();
     const o = (p.get("output") || "").toLowerCase().trim();
     const scaleStr = (p.get("scale") || "").trim();
     let scaleFactor = NaN;
@@ -209,7 +223,9 @@
     return null;
   }
 
-  const broadcastTier = parseBroadcastTier(params);
+  const hdParam = (params.get("hd") || "").toLowerCase().trim();
+  const broadcastTierAuto = hdParam === "auto";
+  let broadcastTier = parseBroadcastTier(params);
 
   /** Letterbox fixed broadcast pixels inside any vMix viewport (Chromium `zoom`). */
   function clearBroadcastFit() {
@@ -225,47 +241,80 @@
     document.documentElement.style.setProperty("--oh-broadcast-h", String(h));
   }
 
-  clearBroadcastFit();
-
-  document.body.classList.remove("player-body--embed-169");
-
-  shell.classList.remove("player-shell--169", "player-shell--916");
-  frame.classList.remove("frame-16-9", "frame-9-16");
-  if (embed169 && is916) {
-    document.body.classList.add("player-body--embed-169");
-    shell.classList.add("player-shell--169");
-    frame.classList.add("frame-9-16");
-  } else if (is916) {
-    shell.classList.add("player-shell--916");
-    frame.classList.add("frame-9-16");
-  } else {
-    shell.classList.add("player-shell--169");
-    frame.classList.add("frame-16-9");
+  /** Fluid player: scale type with viewport when no fixed HD canvas is active. */
+  function updateFluidViewportScale() {
+    if (broadcastTier) {
+      document.documentElement.style.removeProperty("--oh-fluid-scale");
+      return;
+    }
+    const shortSide = Math.min(window.innerWidth, window.innerHeight);
+    const scale = Math.min(1.5, Math.max(1, shortSide / 720));
+    document.documentElement.style.setProperty("--oh-fluid-scale", scale.toFixed(3));
   }
 
   const broadcastViewport = "width=device-width, initial-scale=1";
 
-  if (broadcastTier === "1080") {
-    document.body.classList.add("player-body--hd1080");
-    const w = embed169 && is916 ? 1920 : is916 ? 1080 : 1920;
-    const h = embed169 && is916 ? 1080 : is916 ? 1920 : 1080;
-    setBroadcastFit(w, h);
+  function applyPlayerLayout() {
+    clearBroadcastFit();
+    document.body.classList.remove(
+      "player-body--embed-169",
+      "player-body--hd1080",
+      "player-body--hd1440",
+      "player-body--hd4k"
+    );
+
+    shell.classList.remove("player-shell--169", "player-shell--916");
+    frame.classList.remove("frame-16-9", "frame-9-16");
+    if (embed169 && is916) {
+      document.body.classList.add("player-body--embed-169");
+      shell.classList.add("player-shell--169");
+      frame.classList.add("frame-9-16");
+    } else if (is916) {
+      shell.classList.add("player-shell--916");
+      frame.classList.add("frame-9-16");
+    } else {
+      shell.classList.add("player-shell--169");
+      frame.classList.add("frame-16-9");
+    }
+
     const mv = document.querySelector('meta[name="viewport"]');
-    if (mv) mv.setAttribute("content", broadcastViewport);
-  } else if (broadcastTier === "1440") {
-    document.body.classList.add("player-body--hd1440");
-    const w = embed169 && is916 ? 2560 : is916 ? 1440 : 2560;
-    const h = embed169 && is916 ? 1440 : is916 ? 2560 : 1440;
-    setBroadcastFit(w, h);
-    const mv = document.querySelector('meta[name="viewport"]');
-    if (mv) mv.setAttribute("content", broadcastViewport);
-  } else if (broadcastTier === "4k") {
-    document.body.classList.add("player-body--hd4k");
-    const w = embed169 && is916 ? 3840 : is916 ? 2160 : 3840;
-    const h = embed169 && is916 ? 2160 : is916 ? 3840 : 2160;
-    setBroadcastFit(w, h);
-    const mv = document.querySelector('meta[name="viewport"]');
-    if (mv) mv.setAttribute("content", broadcastViewport);
+
+    if (broadcastTier === "1080") {
+      document.body.classList.add("player-body--hd1080");
+      const w = embed169 && is916 ? 1920 : is916 ? 1080 : 1920;
+      const h = embed169 && is916 ? 1080 : is916 ? 1920 : 1080;
+      setBroadcastFit(w, h);
+      if (mv) mv.setAttribute("content", broadcastViewport);
+    } else if (broadcastTier === "1440") {
+      document.body.classList.add("player-body--hd1440");
+      const w = embed169 && is916 ? 2560 : is916 ? 1440 : 2560;
+      const h = embed169 && is916 ? 1440 : is916 ? 2560 : 1440;
+      setBroadcastFit(w, h);
+      if (mv) mv.setAttribute("content", broadcastViewport);
+    } else if (broadcastTier === "4k") {
+      document.body.classList.add("player-body--hd4k");
+      const w = embed169 && is916 ? 3840 : is916 ? 2160 : 3840;
+      const h = embed169 && is916 ? 2160 : is916 ? 3840 : 2160;
+      setBroadcastFit(w, h);
+      if (mv) mv.setAttribute("content", broadcastViewport);
+    } else if (mv) {
+      mv.setAttribute("content", "width=device-width, initial-scale=1");
+    }
+
+    updateFluidViewportScale();
+  }
+
+  applyPlayerLayout();
+
+  if (broadcastTierAuto) {
+    window.addEventListener("resize", () => {
+      const next = detectBroadcastTierFromViewport();
+      if (next === broadcastTier) return;
+      broadcastTier = next;
+      applyPlayerLayout();
+    });
+  } else {
+    window.addEventListener("resize", updateFluidViewportScale);
   }
 
   void (async function loadAndPlay() {
