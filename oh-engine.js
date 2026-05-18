@@ -6,13 +6,9 @@
   "use strict";
 
   const DISPLAY_MS = 5000;
-  /** Final slide holds longer before end fade-to-black */
-  const LAST_SLIDE_DISPLAY_MS = 10000;
   const FADE_MS = 500;
   /** Full black before first slide content */
   const LEAD_BLACK_MS = 1000;
-  /** Hold on full black after the last slide fades out */
-  const OUT_BLACK_HOLD_MS = 1000;
 
   const EPISODE_ID = "__episode__";
   /** Episode JSON field `Tláloc Traversal` becomes its own draggable credit card. */
@@ -25,6 +21,17 @@
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /** Resolve when playout is stopped (editor Stop) or the AbortController fires. */
+  function waitUntilAborted(ac) {
+    return new Promise((resolve) => {
+      if (ac.signal.aborted) {
+        resolve();
+        return;
+      }
+      ac.signal.addEventListener("abort", () => resolve(), { once: true });
+    });
   }
 
   function escapeHtml(s) {
@@ -443,25 +450,17 @@
         await sleep(FADE_MS);
 
         if (ac.signal.aborted) break;
-        const holdMs = i === slides.length - 1 ? LAST_SLIDE_DISPLAY_MS : DISPLAY_MS;
-        await sleep(holdMs);
+
+        if (i === slides.length - 1) {
+          await waitUntilAborted(ac);
+          break;
+        }
+
+        await sleep(DISPLAY_MS);
         if (ac.signal.aborted) break;
 
-        const hasNext = i < slides.length - 1;
-        if (hasNext) {
-          el.classList.add("is-hidden");
-          await sleep(FADE_MS);
-        }
-      }
-
-      if (!ac.signal.aborted && lastShownIndex >= 0) {
         el.classList.add("is-hidden");
         await sleep(FADE_MS);
-        if (!ac.signal.aborted) {
-          el.innerHTML = '<div class="oh-lead-black" aria-hidden="true"></div>';
-          el.classList.remove("is-hidden");
-          await sleep(OUT_BLACK_HOLD_MS);
-        }
       }
     } finally {
       el.classList.remove("is-hidden");
@@ -484,10 +483,8 @@
 
   window.OHCreditsEngine = {
     DISPLAY_MS,
-    LAST_SLIDE_DISPLAY_MS,
     FADE_MS,
     LEAD_BLACK_MS,
-    OUT_BLACK_HOLD_MS,
     EPISODE_ID,
     TLALOC_ID,
     IMAGE_CLOUDFLEX_BROADCAST_ID,
