@@ -31,7 +31,7 @@
   const DEFAULT_PUBLISH_FUNCTION_URL =
     "https://uyufnbroqmwjtzvcsosv.supabase.co/functions/v1/publish-credits";
 
-  /** Panelists share page 1 with Host/Reader when total panelist names are 0–6 (fewer than 7). */
+  /** Panelists share page 1 with Host/Guest/Reader when total panelist names are 0–6 (fewer than 7). */
   const PANELISTS_MERGE_ON_PAGE1_MAX = 6;
 
   /** `episode` JSON key for Tláloc Traversal line on the title card (label fixed; value from JSON). */
@@ -44,7 +44,11 @@
   const GLOBAL_CREDIT_EXCLUDED_NAME_KEYS = new Set(["mickey macachor"]);
 
   /** Additional trimmed lowercased names omitted only under Contributing Producers (or legacy Contributor role). */
-  const CONTRIBUTING_PRODUCERS_EXTRA_EXCLUDED_NAME_KEYS = new Set(["extra hours", "tuesday focus"]);
+  const CONTRIBUTING_PRODUCERS_EXTRA_EXCLUDED_NAME_KEYS = new Set([
+    "extra hours",
+    "tuesday focus",
+    "the rundown",
+  ]);
 
   /** @param {string} displayName */
   function isGloballyExcludedCreditName(displayName) {
@@ -575,7 +579,7 @@
   }
 
   /**
-   * Page layout for `_designerPageHint: "starter-v1"`: Host + Reader together, then 3 roles per
+   * Page layout for `_designerPageHint: "starter-v1"`: Host + Guest + Reader together, then 3 roles per
    * page for two pages, then height-based pages for middle/heavy rows, last row on its own page.
    * @param {string[]} itemOrder
    * @returns {string[][]}
@@ -585,35 +589,36 @@
     if (runs.length === 0) return [[]];
 
     const pages = [];
+    const { opening, rest } = collectOpeningRoleRuns(runs);
+    const page1 = flattenRuns(opening);
+    if (page1.length) pages.push(page1);
+
     let idx = 0;
 
     function takeRunCount(count) {
       const ids = [];
-      for (let k = 0; k < count && idx < runs.length; k++) {
-        ids.push(...runs[idx++].ids);
+      for (let k = 0; k < count && idx < rest.length; k++) {
+        ids.push(...rest[idx++].ids);
       }
       return ids;
     }
 
-    const p1 = takeRunCount(2);
-    if (p1.length) pages.push(p1);
-
     for (let slab = 0; slab < 2; slab++) {
-      if (idx >= runs.length - 1) break;
+      if (idx >= rest.length - 1) break;
       const slabIds = takeRunCount(3);
       if (slabIds.length) pages.push(slabIds);
     }
 
     const middleIds = [];
-    while (idx < runs.length - 1) {
-      middleIds.push(...runs[idx++].ids);
+    while (idx < rest.length - 1) {
+      middleIds.push(...rest[idx++].ids);
     }
     if (middleIds.length) {
       pages.push(...autoPaginateShared(middleIds));
     }
 
-    if (idx < runs.length) {
-      pages.push([...runs[idx].ids]);
+    if (idx < rest.length) {
+      pages.push([...rest[idx].ids]);
     }
 
     return pages.length ? pages : [[]];
@@ -645,6 +650,7 @@
   function roleSortTier(role) {
     const k = canonicalRoleKeyForSort(role);
     if (k === "host") return { tier: 10 };
+    if (k === "guest") return { tier: 15 };
     if (k === "reader") return { tier: 20 };
     if (k === "panelist" || k === "panelists") return { tier: 30 };
     if (k === "technical director") return { tier: 50 };
@@ -709,7 +715,7 @@
   }
 
   /**
-   * Sort JSON credit rows by show rules (Host first, EIC/TD blocks, Question Coordinator before Manager, …).
+   * Sort JSON credit rows by show rules (Host first, Guest, Reader, EIC/TD blocks, …).
    * Within each row, id order is unchanged (chunk order preserved).
    * @param {string[]} order
    * @param {Map<string, { role: string, people: string[] }>} items
@@ -825,6 +831,27 @@
     return out;
   }
 
+  /** Host, Guest, Reader (in that order) for starter page 1; remaining runs follow in source order. */
+  function collectOpeningRoleRuns(runs) {
+    const openingKeys = ["host", "guest", "reader"];
+    /** @type {Set<{ row: number, ids: string[] }>} */
+    const consumed = new Set();
+    /** @type {{ row: number, ids: string[] }[]} */
+    const opening = [];
+    for (const roleKey of openingKeys) {
+      for (const run of runs) {
+        const it0 = itemsById.get(run.ids[0]);
+        if (!it0 || consumed.has(run)) continue;
+        if (canonicalRoleKeyForSort(it0.role) === roleKey) {
+          opening.push(run);
+          consumed.add(run);
+        }
+      }
+    }
+    const rest = runs.filter((r) => !consumed.has(r));
+    return { opening, rest };
+  }
+
   /**
    * Short roles (1–2 names each): aim for {@link STARTER_SHORT_ROLES_PER_PAGE} roles per page.
    * When the count is 4,7,10,… (n≡1 mod 3, n≥4), use 2+2+…+3 pattern instead of 3+…+1 so pages stay even.
@@ -836,17 +863,14 @@
   }
 
   /**
-   * `_designerPageHint: "starter-v2"`. Page 1 is Host + Reader only, except Panelists may share
+   * `_designerPageHint: "starter-v2"`. Page 1 is Host + Guest + Reader, except Panelists may share
    * page 1 when their total name count is fewer than 7 (see PANELISTS_MERGE_ON_PAGE1_MAX).
    * @param {string[]} itemOrder
    * @returns {string[][]}
    */
   function paginateSemanticStarterLayout(itemOrder) {
     const runs = groupItemOrderByCreditRow(itemOrder);
-    /** @type {{ row: number, ids: string[] }[]} */
-    const host = [];
-    /** @type {{ row: number, ids: string[] }[]} */
-    const reader = [];
+    const { opening, rest } = collectOpeningRoleRuns(runs);
     /** @type {{ row: number, ids: string[] }[]} */
     const panelists = [];
     /** @type {{ row: number, ids: string[] }[]} */
@@ -858,15 +882,13 @@
     /** @type {{ row: number, ids: string[] }[]} */
     const closingRuns = [];
 
-    for (const run of runs) {
+    for (const run of rest) {
       const it0 = itemsById.get(run.ids[0]);
       if (!it0) continue;
       const key = canonicalRoleKeyForSort(it0.role);
       const tp = totalPeopleInRun(run);
 
-      if (key === "host") host.push(run);
-      else if (key === "reader") reader.push(run);
-      else if (key === "panelist" || key === "panelists") panelists.push(run);
+      if (key === "panelist" || key === "panelists") panelists.push(run);
       else if (isContributingProducersRoleKey(key)) contributingProducers.push(run);
       else if (key === "special thanks") closingRuns.push(run);
       else if (tp <= 2) shortRuns.push(run);
@@ -880,7 +902,7 @@
       panelIds.length > 0 && panelNameTotal <= PANELISTS_MERGE_ON_PAGE1_MAX;
 
     const pages = [];
-    const page1 = [...flattenRuns(host), ...flattenRuns(reader)];
+    const page1 = [...flattenRuns(opening)];
     if (mergePanelOnPage1) page1.push(...panelIds);
     if (page1.length) pages.push(page1);
 
@@ -1302,9 +1324,9 @@
       const hint = parsed.designerPageHint;
       const layoutNote =
         hint === "starter-v2"
-          ? " Starter layout v2: Host+Reader (Panelists if fewer than 7 names), Contributing Producers, then ~3 short roles (1-2 names) per page, large groups, thanks."
+          ? " Starter layout v2: Host+Guest+Reader (Panelists if fewer than 7 names), Contributing Producers, then ~3 short roles (1-2 names) per page, large groups, thanks."
           : hint === "starter-v1"
-            ? " Starter page layout (Host+Reader, ~3 roles/page, heavy lists then thanks)."
+            ? " Starter page layout (Host+Guest+Reader, ~3 roles/page, heavy lists then thanks)."
             : "";
 
       if (!merging) {
