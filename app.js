@@ -2379,6 +2379,24 @@
     }
   }
 
+  /** Deep link: ?event= / ?EventCode= / ?e= sets Cloud settings event code (overrides localStorage). */
+  function eventCodeFromQueryParams(p) {
+    for (const [key, value] of p.entries()) {
+      const k = key.toLowerCase();
+      if (k !== "event" && k !== "e" && k !== "eventcode") continue;
+      const t = String(value || "").trim();
+      if (t) return t;
+    }
+    return "";
+  }
+
+  function applyEventFromQuery() {
+    const code = eventCodeFromQueryParams(new URLSearchParams(window.location.search));
+    if (!code || !validateEventSlug(code) || !els.remoteEvent) return;
+    els.remoteEvent.value = code;
+    saveRemoteFields();
+  }
+
   applyViewFromQuery();
 
   /**
@@ -2422,6 +2440,7 @@
 
   void (async function boot() {
     loadRemoteFields();
+    applyEventFromQuery();
     syncStoredEventIntoQuickPick();
     renderPlayoutEmpty();
     renderPageStrip();
