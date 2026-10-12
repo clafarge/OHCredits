@@ -216,6 +216,7 @@
       else if (/ecammlogo_centered\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--ecamm-logo";
       else if (/mimolive-logo\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--mimolive-logo";
       else if (/OBSLogo\.png/i.test(rawSrc)) imgModCls = " slide-credit-img--obs-logo";
+      else if (/Vizrt_Logo_Main_-_Orange\.webp/i.test(rawSrc)) imgModCls = " slide-credit-img--vizrt-logo";
       return `<div class="slide-credit-inner slide-credit-inner--image"><img class="slide-credit-img${imgModCls}" src="${src}" alt="${alt}" decoding="async" /></div>`;
     }
     if (item.kind === "peopleImage") {
@@ -314,6 +315,13 @@
         idSlug: "obs",
         src: "images/OBSLogo.png",
         alt: "OBS",
+      };
+    }
+    if (key === "vizrt") {
+      return {
+        idSlug: "vizrt",
+        src: "images/Vizrt_Logo_Main_-_Orange.webp",
+        alt: "Vizrt",
       };
     }
     return null;

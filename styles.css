@@ -746,6 +746,7 @@ select.remote-input {
 .slide-credit-img.slide-credit-img--ecamm-logo,
 .slide-credit-img.slide-credit-img--mimolive-logo,
 .slide-credit-img.slide-credit-img--obs-logo,
+.slide-credit-img.slide-credit-img--vizrt-logo,
 .slide-credit-img.slide-credit-img--people-path {
   max-width: min(46cqw, 50%);
 }
@@ -771,6 +772,7 @@ select.remote-input {
 .frame-9-16 .slide-credit-img.slide-credit-img--ecamm-logo,
 .frame-9-16 .slide-credit-img.slide-credit-img--mimolive-logo,
 .frame-9-16 .slide-credit-img.slide-credit-img--obs-logo,
+.frame-9-16 .slide-credit-img.slide-credit-img--vizrt-logo,
 .frame-9-16 .slide-credit-img.slide-credit-img--people-path {
   max-width: min(44cqw, 50%);
 }
@@ -798,6 +800,7 @@ select.remote-input {
 .workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--ecamm-logo,
 .workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--mimolive-logo,
 .workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--obs-logo,
+.workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--vizrt-logo,
 .workspace-grid .frame-16-9 .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
 }
@@ -815,6 +818,7 @@ select.remote-input {
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--ecamm-logo,
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--mimolive-logo,
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--obs-logo,
+.workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--vizrt-logo,
 .workspace-grid .frame-9-16 .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
 }
@@ -843,6 +847,7 @@ select.remote-input {
 .page-box--organizer .slide-credit-img.slide-credit-img--ecamm-logo,
 .page-box--organizer .slide-credit-img.slide-credit-img--mimolive-logo,
 .page-box--organizer .slide-credit-img.slide-credit-img--obs-logo,
+.page-box--organizer .slide-credit-img.slide-credit-img--vizrt-logo,
 .page-box--organizer .slide-credit-img.slide-credit-img--people-path {
   max-width: 50%;
 }
@@ -1694,6 +1699,8 @@ html.player-broadcast-active .player-broadcast-fit-inner {
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
   .slide-credit-img.slide-credit-img--obs-logo,
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .slide-credit-img.slide-credit-img--vizrt-logo,
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
   .slide-credit-img.slide-credit-img--people-path {
   max-width: min(calc(46cqw / var(--oh-fluid-scale, 1)), 50%);
 }
@@ -1720,6 +1727,9 @@ html.player-broadcast-active .player-broadcast-fit-inner {
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
   .frame-9-16
   .slide-credit-img.slide-credit-img--obs-logo,
+.player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
+  .frame-9-16
+  .slide-credit-img.slide-credit-img--vizrt-logo,
 .player-body:not(.player-body--hd1080):not(.player-body--hd1440):not(.player-body--hd4k)
   .frame-9-16
   .slide-credit-img.slide-credit-img--people-path {
